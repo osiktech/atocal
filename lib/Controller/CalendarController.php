@@ -6,6 +6,8 @@ namespace OCA\JitsiCalendar\Controller;
 
 use OCA\JitsiCalendar\AppInfo\Application;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Calendar\ICreateFromString;
@@ -56,6 +58,12 @@ class CalendarController extends Controller
      * If the user is not authenticated, Nextcloud's normal
      * authentication flow takes over before the controller executes.
      */
+    /*
+     * NoCSRFRequired: Seite wird per Link aus dem Jitsi-Launcher
+     * aufgerufen – der Browser sendet noch kein Request-Token.
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function confirm(
         string $summary = '',
         string $description = '',
@@ -81,6 +89,11 @@ class CalendarController extends Controller
     /**
      * Create the calendar event.
      */
+    /*
+     * CSRF bleibt aktiv: Das Formular der Bestätigungsseite
+     * sendet das Request-Token mit.
+     */
+    #[NoAdminRequired]
     public function create(
         string $summary = '',
         string $description = '',
