@@ -17,6 +17,11 @@ use OCP\IUserSession;
 class CalendarController extends Controller
 {
     /*
+     * Target calendar for created events.
+     */
+    private const CALENDAR_NAME = 'Personal';
+
+    /*
      * datetime-local format as sent by jitsi-launch,
      * e.g. "2026-10-07T14:15".
      */
@@ -116,7 +121,9 @@ class CalendarController extends Controller
 
         if ($calendar === null) {
             throw new \RuntimeException(
-                'No writable calendar is available for this user.'
+                'No writable calendar named "'
+                . self::CALENDAR_NAME
+                . '" is available for this user.'
             );
         }
 
@@ -133,7 +140,7 @@ class CalendarController extends Controller
     }
 
     /**
-     * First writable calendar of the user.
+     * The user's "Personal" calendar.
      *
      * getCalendarsForUser() returns ICalendar objects.
      * Only calendars implementing ICreateFromString are writable.
@@ -143,7 +150,11 @@ class CalendarController extends Controller
         $calendars = $this->calendarManager->getCalendarsForUser($userId);
 
         foreach ($calendars as $calendar) {
-            if ($calendar instanceof ICreateFromString) {
+            if (!$calendar instanceof ICreateFromString) {
+                continue;
+            }
+
+            if ($calendar->getDisplayName() === self::CALENDAR_NAME) {
                 return $calendar;
             }
         }
