@@ -4,22 +4,27 @@ declare(strict_types=1);
 
 namespace OCA\JitsiCalendar\Controller;
 
+use OCA\JitsiCalendar\AppInfo\Application;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\Calendar\ICreateFromString;
 use OCP\Calendar\IManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use OCP\IURLGenerator;
-use OCP\Util;
-use OCP\IConfig;
+use OCP\IUserSession;
 
 class CalendarController extends Controller
 {
+    /*
+     * datetime-local format as sent by jitsi-launch,
+     * e.g. "2026-10-07T14:15".
+     */
+    private const DATETIME_LOCAL = 'Y-m-d\TH:i';
+
     private IManager $calendarManager;
     private IUserSession $userSession;
     private IURLGenerator $urlGenerator;
-    private IConfig $config;
 
     public function __construct(
         string $appName,
@@ -62,18 +67,18 @@ class CalendarController extends Controller
         );
 
         return new TemplateResponse(
-            self::APP_ID,
+            Application::APP_ID,
             'confirm',
             [
                 'summary' => $data['summary'],
                 'description' => $data['description'],
-                'start' => $data['start'],
-                'end' => $data['end'],
+                'start' => $data['start']->format(self::DATETIME_LOCAL),
+                'end' => $data['end']->format(self::DATETIME_LOCAL),
                 'organizer' => $data['organizer'],
                 'location' => $data['location'],
                 'url' => $data['url'],
                 'createUrl' => $this->urlGenerator->linkToRoute(
-                    self::APP_ID . '.calendar.create'
+                    Application::APP_ID . '.calendar.create'
                 ),
             ]
         );
@@ -107,49 +112,15 @@ class CalendarController extends Controller
             throw new \RuntimeException('No authenticated Nextcloud user.');
         }
 
-        $calendars = $this->calendarManager->getCalendarsForUser(
-            $user->getUID()
-        );
+        $calendar = $this->findWritableCalendar($user->getUID());
 
-        $writableCalendar = null;
-
-        foreach ($calendars as $calendar) {
-            /*
-             * getCalendarsForUser() returns ICalendar objects.
-             * Only calendars implementing ICreateFromString are writable.
-             */
-            if ($calendar instanceof \OCP\Calendar\ICreateFromString) {
-                $writableCalendar = $calendar;
-                break;
-            }
-        }
-
-        if ($writableCalendar === null) {
+        if ($calendar === null) {
             throw new \RuntimeException(
                 'No writable calendar is available for this user.'
             );
         }
 
-        $uid = 'jitsi-' . bin2hex(random_bytes(16))
-            . '@meet.bnvb.eu';
-
-        $ics = $this->buildIcs(
-            $uid,
-            $data['summary'],
-            $data['description'],
-            $data['start'],
-            $data['end'],
-            $data['organizer'],
-            $data['location'],
-            $data['url']
-        );
-
-        $filename = $uid . '.ics';
-
-        $writableCalendar->createFromString(
-            $filename,
-            $ics
-        );
+        $this->createEvent($calendar, $data);
 
         /*
          * Open the Nextcloud Calendar application.
@@ -159,6 +130,52 @@ class CalendarController extends Controller
         );
 
         return new RedirectResponse($calendarUrl);
+    }
+
+    /**
+     * First writable calendar of the user.
+     *
+     * getCalendarsForUser() returns ICalendar objects.
+     * Only calendars implementing ICreateFromString are writable.
+     */
+    private function findWritableCalendar(string $userId): ?ICreateFromString
+    {
+        $calendars = $this->calendarManager->getCalendarsForUser($userId);
+
+        foreach ($calendars as $calendar) {
+            if ($calendar instanceof ICreateFromString) {
+                return $calendar;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Create the event through the platform event builder,
+     * which handles escaping and ICS serialization.
+     */
+    private function createEvent(ICreateFromString $calendar, array $data): void
+    {
+        $builder = $this->calendarManager->createEventBuilder();
+
+        $builder->setStartDate($data['start']);
+        $builder->setEndDate($data['end']);
+        $builder->setSummary($data['summary']);
+
+        if ($data['description'] !== '') {
+            $builder->setDescription($data['description']);
+        }
+
+        if ($data['location'] !== '') {
+            $builder->setLocation($data['location']);
+        }
+
+        if ($data['organizer'] !== '') {
+            $builder->setOrganizer($data['organizer']);
+        }
+
+        $builder->createInCalendar($calendar);
     }
 
     /**
@@ -209,39 +226,11 @@ class CalendarController extends Controller
         }
 
         if ($location !== '') {
-            $locationParts = parse_url($location);
-
-            if (
-                $locationParts === false ||
-                !isset($locationParts['scheme']) ||
-                !in_array(
-                    strtolower($locationParts['scheme']),
-                    ['https'],
-                    true
-                )
-            ) {
-                throw new \InvalidArgumentException(
-                    'Location must be an HTTPS URL.'
-                );
-            }
+            $this->assertHttpsUrl($location, 'Location must be an HTTPS URL.');
         }
 
         if ($url !== '') {
-            $urlParts = parse_url($url);
-
-            if (
-                $urlParts === false ||
-                !isset($urlParts['scheme']) ||
-                !in_array(
-                    strtolower($urlParts['scheme']),
-                    ['https'],
-                    true
-                )
-            ) {
-                throw new \InvalidArgumentException(
-                    'Meeting URL must be an HTTPS URL.'
-                );
-            }
+            $this->assertHttpsUrl($url, 'Meeting URL must be an HTTPS URL.');
         }
 
         if ($organizer !== '' && !filter_var(
@@ -264,6 +253,19 @@ class CalendarController extends Controller
         ];
     }
 
+    private function assertHttpsUrl(string $value, string $message): void
+    {
+        $parts = parse_url($value);
+
+        $valid = $parts !== false
+            && isset($parts['scheme'])
+            && strtolower($parts['scheme']) === 'https';
+
+        if (!$valid) {
+            throw new \InvalidArgumentException($message);
+        }
+    }
+
     /**
      * Parse datetime-local values.
      *
@@ -273,7 +275,7 @@ class CalendarController extends Controller
     private function parseLocalDateTime(string $value): \DateTimeImmutable
     {
         $date = \DateTimeImmutable::createFromFormat(
-            'Y-m-d\TH:i',
+            self::DATETIME_LOCAL,
             $value
         );
 
@@ -291,104 +293,5 @@ class CalendarController extends Controller
         }
 
         return $date;
-    }
-
-    /**
-     * Build an RFC 5545 iCalendar event.
-     */
-    private function buildIcs(
-        string $uid,
-        string $summary,
-        string $description,
-        \DateTimeImmutable $start,
-        \DateTimeImmutable $end,
-        string $organizer,
-        string $location,
-        string $url
-    ): string {
-        $now = new \DateTimeImmutable('now');
-
-        $dtStamp = $now->setTimezone(
-            new \DateTimeZone('UTC')
-        )->format('Ymd\THis\Z');
-
-        $dtStart = $start->format('Ymd\THis');
-        $dtEnd = $end->format('Ymd\THis');
-
-        $lines = [
-            'BEGIN:VCALENDAR',
-            'VERSION:2.0',
-            'PRODID:-//BNVB//Jitsi Calendar//EN',
-            'CALSCALE:GREGORIAN',
-            'METHOD:PUBLISH',
-            'BEGIN:VEVENT',
-            'UID:' . $this->escapeIcsText($uid),
-            'DTSTAMP:' . $dtStamp,
-            'DTSTART:' . $dtStart,
-            'DTEND:' . $dtEnd,
-            'SUMMARY:' . $this->escapeIcsText($summary),
-        ];
-
-        if ($description !== '') {
-            $lines[] =
-                'DESCRIPTION:' .
-                $this->escapeIcsText($description);
-        }
-
-        if ($location !== '') {
-            $lines[] =
-                'LOCATION:' .
-                $this->escapeIcsText($location);
-        }
-
-        if ($organizer !== '') {
-            $lines[] =
-                'ORGANIZER:MAILTO:' .
-                $this->escapeIcsText($organizer);
-        }
-
-        if ($url !== '') {
-            $lines[] =
-                'URL:' .
-                $this->escapeIcsText($url);
-        }
-
-        $lines[] = 'STATUS:CONFIRMED';
-        $lines[] = 'SEQUENCE:0';
-        $lines[] = 'TRANSP:OPAQUE';
-
-        $lines[] = 'BEGIN:VALARM';
-        $lines[] = 'ACTION:DISPLAY';
-        $lines[] = 'DESCRIPTION:Reminder';
-        $lines[] = 'TRIGGER:-PT15M';
-        $lines[] = 'END:VALARM';
-
-        $lines[] = 'END:VEVENT';
-        $lines[] = 'END:VCALENDAR';
-
-        return implode("\r\n", $lines) . "\r\n";
-    }
-
-    private function escapeIcsText(string $value): string
-    {
-        return str_replace(
-            [
-                '\\',
-                ';',
-                ',',
-                "\r\n",
-                "\r",
-                "\n",
-            ],
-            [
-                '\\\\',
-                '\;',
-                '\,',
-                '\n',
-                '\n',
-                '\n',
-            ],
-            $value
-        );
     }
 }

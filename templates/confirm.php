@@ -43,12 +43,12 @@ $h = static function (string $value): string {
 
                 <div class="jitsi-calendar-row">
                     <strong>Start</strong>
-                    <span><?= $h($_['start']) ?></span>
+                    <span><?= $h(str_replace('T', ' ', $_['start'])) ?></span>
                 </div>
 
                 <div class="jitsi-calendar-row">
                     <strong>End</strong>
-                    <span><?= $h($_['end']) ?></span>
+                    <span><?= $h(str_replace('T', ' ', $_['end'])) ?></span>
                 </div>
 
                 <?php if ($_['organizer'] !== ''): ?>
@@ -79,6 +79,12 @@ $h = static function (string $value): string {
                 method="post"
                 action="<?= $h($_['createUrl']) ?>"
             >
+                <input
+                    type="hidden"
+                    name="requesttoken"
+                    value="<?= $h($_['requesttoken']) ?>"
+                >
+
                 <input
                     type="hidden"
                     name="summary"
