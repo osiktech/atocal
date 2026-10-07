@@ -1,0 +1,75 @@
+.jitsi-calendar-container {
+    max-width: 760px;
+    margin: 60px auto;
+    padding: 20px;
+}
+
+.jitsi-calendar-card {
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 32px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.jitsi-calendar-card h1 {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.jitsi-calendar-intro {
+    color: var(--color-text-maxcontrast);
+    margin-bottom: 28px;
+}
+
+.jitsi-calendar-details {
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 28px;
+}
+
+.jitsi-calendar-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.jitsi-calendar-row:last-child {
+    border-bottom: 0;
+}
+
+.jitsi-calendar-row span {
+    overflow-wrap: anywhere;
+}
+
+.jitsi-calendar-row .description {
+    white-space: normal;
+}
+
+.jitsi-calendar-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.jitsi-calendar-actions button,
+.jitsi-calendar-actions a {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.jitsi-calendar-actions button.primary {
+    background: var(--color-primary-element);
+    color: var(--color-primary-element-text);
+    border: 0;
+}
+
+.jitsi-calendar-actions a.secondary {
+    border: 1px solid var(--color-border);
+    color: var(--color-main-text);
+}
