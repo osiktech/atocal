@@ -23,7 +23,7 @@ class Application extends App
             function (IAppContainer $c): CalendarController {
                 return new CalendarController(
                     self::APP_ID,
-                    $c->get('Request'),
+                    $c->get(\OCP\IRequest::class),
                     $c->get(\OCP\Calendar\IManager::class),
                     $c->get(\OCP\IUserSession::class),
                     $c->get(\OCP\IURLGenerator::class),
