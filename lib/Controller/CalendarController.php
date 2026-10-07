@@ -149,12 +149,18 @@ class CalendarController extends Controller
     /**
      * The user's "Personal" calendar.
      *
-     * getCalendarsForUser() returns ICalendar objects.
+     * getCalendarsForPrincipal() returns ICalendar objects.
      * Only calendars implementing ICreateFromString are writable.
      */
     private function findWritableCalendar(string $userId): ?ICreateFromString
     {
-        $calendars = $this->calendarManager->getCalendarsForUser($userId);
+        /*
+         * IManager kennt keine getCalendarsForUser() –
+         * Kalender werden über die Principal-URI abgefragt.
+         */
+        $principalUri = 'principals/users/' . $userId;
+
+        $calendars = $this->calendarManager->getCalendarsForPrincipal($principalUri);
 
         foreach ($calendars as $calendar) {
             if (!$calendar instanceof ICreateFromString) {
