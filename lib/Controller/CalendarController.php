@@ -13,6 +13,7 @@ use OCP\Calendar\IManager;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
+use OCP\IDateTimeZone;
 
 class CalendarController extends Controller
 {
@@ -30,19 +31,22 @@ class CalendarController extends Controller
     private IManager $calendarManager;
     private IUserSession $userSession;
     private IURLGenerator $urlGenerator;
+    private IDateTimeZone $dateTimeZone;
 
     public function __construct(
         string $appName,
         IRequest $request,
         IManager $calendarManager,
         IUserSession $userSession,
-        IURLGenerator $urlGenerator
+        IURLGenerator $urlGenerator,
+        IDateTimeZone $dateTimeZone
     ) {
         parent::__construct($appName, $request);
 
         $this->calendarManager = $calendarManager;
         $this->userSession = $userSession;
         $this->urlGenerator = $urlGenerator;
+        $this->dateTimeZone = $dateTimeZone;
     }
 
     /**
@@ -71,22 +75,7 @@ class CalendarController extends Controller
             $url
         );
 
-        return new TemplateResponse(
-            Application::APP_ID,
-            'confirm',
-            [
-                'summary' => $data['summary'],
-                'description' => $data['description'],
-                'start' => $data['start']->format(self::DATETIME_LOCAL),
-                'end' => $data['end']->format(self::DATETIME_LOCAL),
-                'organizer' => $data['organizer'],
-                'location' => $data['location'],
-                'url' => $data['url'],
-                'createUrl' => $this->urlGenerator->linkToRoute(
-                    Application::APP_ID . '.calendar.create'
-                ),
-            ]
-        );
+        return $this->renderConfirm($data);
     }
 
     /**
@@ -100,7 +89,7 @@ class CalendarController extends Controller
         string $organizer = '',
         string $location = '',
         string $url = ''
-    ): RedirectResponse {
+    ): RedirectResponse|TemplateResponse {
         $data = $this->validateEventData(
             $summary,
             $description,
@@ -119,11 +108,16 @@ class CalendarController extends Controller
 
         $calendar = $this->findWritableCalendar($user->getUID());
 
+        /*
+         * Friendly error instead of a hard server error page.
+         */
         if ($calendar === null) {
-            throw new \RuntimeException(
+            return $this->renderConfirm(
+                $data,
                 'No writable calendar named "'
                 . self::CALENDAR_NAME
-                . '" is available for this user.'
+                . '" was found in your account. Create it in the '
+                . 'Nextcloud Calendar app, then try again.'
             );
         }
 
@@ -163,6 +157,30 @@ class CalendarController extends Controller
     }
 
     /**
+     * Render the confirmation page, optionally with an error message.
+     */
+    private function renderConfirm(array $data, string $error = ''): TemplateResponse
+    {
+        return new TemplateResponse(
+            Application::APP_ID,
+            'confirm',
+            [
+                'summary' => $data['summary'],
+                'description' => $data['description'],
+                'start' => $data['start']->format(self::DATETIME_LOCAL),
+                'end' => $data['end']->format(self::DATETIME_LOCAL),
+                'organizer' => $data['organizer'],
+                'location' => $data['location'],
+                'url' => $data['url'],
+                'error' => $error,
+                'createUrl' => $this->urlGenerator->linkToRoute(
+                    Application::APP_ID . '.calendar.create'
+                ),
+            ]
+        );
+    }
+
+    /**
      * Create the event through the platform event builder,
      * which handles escaping and ICS serialization.
      */
@@ -174,8 +192,10 @@ class CalendarController extends Controller
         $builder->setEndDate($data['end']);
         $builder->setSummary($data['summary']);
 
-        if ($data['description'] !== '') {
-            $builder->setDescription($data['description']);
+        $description = $this->mergeUrlIntoDescription($data);
+
+        if ($description !== '') {
+            $builder->setDescription($description);
         }
 
         if ($data['location'] !== '') {
@@ -187,6 +207,24 @@ class CalendarController extends Controller
         }
 
         $builder->createInCalendar($calendar);
+    }
+
+    /**
+     * The event builder has no URL property, so a URL that
+     * differs from the location is kept in the description.
+     */
+    private function mergeUrlIntoDescription(array $data): string
+    {
+        $urlOnly = $data['url'] !== ''
+            && $data['url'] !== $data['location'];
+
+        if (!$urlOnly) {
+            return $data['description'];
+        }
+
+        $prefix = $data['description'] === '' ? '' : $data['description'] . "\n\n";
+
+        return $prefix . $data['url'];
     }
 
     /**
@@ -280,20 +318,25 @@ class CalendarController extends Controller
     /**
      * Parse datetime-local values.
      *
-     * datetime-local has no timezone information, so we intentionally
-     * interpret the value in the Nextcloud server's configured timezone.
+     * datetime-local carries no timezone, so it is interpreted
+     * in the user's Nextcloud timezone. It falls back to the
+     * server default timezone if the user has none set.
      */
     private function parseLocalDateTime(string $value): \DateTimeImmutable
     {
+        $timeZone = $this->dateTimeZone->getTimeZone();
+
         $date = \DateTimeImmutable::createFromFormat(
             self::DATETIME_LOCAL,
-            $value
+            $value,
+            $timeZone
         );
 
         if ($date === false) {
             $date = \DateTimeImmutable::createFromFormat(
                 'Y-m-d\TH:i:s',
-                $value
+                $value,
+                $timeZone
             );
         }
 

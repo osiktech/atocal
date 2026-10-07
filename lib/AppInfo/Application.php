@@ -26,7 +26,8 @@ class Application extends App
                     $c->get('Request'),
                     $c->get(\OCP\Calendar\IManager::class),
                     $c->get(\OCP\IUserSession::class),
-                    $c->get(\OCP\IURLGenerator::class)
+                    $c->get(\OCP\IURLGenerator::class),
+                    $c->get(\OCP\IDateTimeZone::class)
                 );
             }
         );

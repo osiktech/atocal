@@ -25,6 +25,12 @@ $h = static function (string $value): string {
                 Nextcloud Calendar.
             </p>
 
+            <?php if ($_['error'] !== ''): ?>
+                <div class="jitsi-calendar-error">
+                    <?= $h($_['error']) ?>
+                </div>
+            <?php endif; ?>
+
             <div class="jitsi-calendar-details">
 
                 <div class="jitsi-calendar-row">
