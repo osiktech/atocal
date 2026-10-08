@@ -31,7 +31,7 @@ class CalendarController extends Controller
     private const REMINDER_TRIGGER = '-PT15M';
 
     /*
-     * datetime-local format as sent by jitsi-launch,
+     * datetime-local format as sent by external application,
      * e.g. "2026-10-07T14:15".
      */
     private const DATETIME_LOCAL = 'Y-m-d\TH:i';
@@ -63,10 +63,9 @@ class CalendarController extends Controller
      * The route itself requires an authenticated Nextcloud user.
      * If the user is not authenticated, Nextcloud's normal
      * authentication flow takes over before the controller executes.
-     */
-    /*
-     * NoCSRFRequired: Seite wird per Link aus dem Jitsi-Launcher
-     * aufgerufen – der Browser sendet noch kein Request-Token.
+     *
+     * NoCSRFRequired: Page will be called by link from external application
+     * browser does not send request token, yet.
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -94,10 +93,9 @@ class CalendarController extends Controller
 
     /**
      * Create the calendar event.
-     */
-    /*
-     * CSRF bleibt aktiv: Das Formular der Bestätigungsseite
-     * sendet das Request-Token mit.
+     *
+     * CSRF remains active: the confirmation page form
+     * sends the request token along.
      */
     #[NoAdminRequired]
     public function create(
@@ -161,8 +159,7 @@ class CalendarController extends Controller
     private function findWritableCalendar(string $userId): ?ICreateFromString
     {
         /*
-         * IManager kennt keine getCalendarsForUser() –
-         * Kalender werden über die Principal-URI abgefragt.
+         * IManager calendars are queried via the principal URI.
          */
         $principalUri = 'principals/users/' . $userId;
 
@@ -198,6 +195,7 @@ class CalendarController extends Controller
                 'location' => $data['location'],
                 'url' => $data['url'],
                 'error' => $error,
+                'cancelUrl' => $this->urlGenerator->getAbsoluteURL('/'),
                 'createUrl' => $this->urlGenerator->linkToRoute(
                     Application::APP_ID . '.calendar.create'
                 ),
