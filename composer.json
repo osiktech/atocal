@@ -1,0 +1,24 @@
+{
+    "name": "bnvb-ingenieure/atocal",
+    "description": "Create events in the user's Nextcloud Calendar",
+    "license": "AGPL-3.0-or-later",
+    "require": {
+        "php": ">=8.2",
+        "nextcloud/ocp": "^34 || ^35"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "sabre/vobject": "^4.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "OCA\\AToCal\\": "lib/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OCA\\AToCal\\Tests\\": "tests/",
+            "OCP\\": "vendor/nextcloud/ocp/OCP/"
+        }
+    }
+}
