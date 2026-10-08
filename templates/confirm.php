@@ -119,8 +119,8 @@ $l = $_['l10n'];
                         <select id="atocal-calendar" name="calendarId">
                             <?php foreach ($_['calendars'] as $calendar): ?>
                                 <option
-                                    value="<?= $h($calendar['id']) ?>"
-                                    <?= $calendar['id'] === $_['calendarId'] ? 'selected' : '' ?>
+                                    value="<?= $h($calendar['value']) ?>"
+                                    <?= $calendar['value'] === $_['calendarId'] ? 'selected' : '' ?>
                                 >
                                     <?= $h($calendar['displayName']) ?>
                                 </option>

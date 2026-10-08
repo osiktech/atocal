@@ -36,6 +36,11 @@ class CalendarController extends Controller
     private const CALENDAR_APP_ID = 'calendar';
 
     /*
+     * Form value separator between calendar key and URI.
+     */
+    private const KEY_SEPARATOR = '::';
+
+    /*
      * Default reminder: 15 minutes before the event starts.
      */
     private const REMINDER_TRIGGER = '-PT15M';
@@ -239,17 +244,36 @@ class CalendarController extends Controller
     }
 
     /**
-     * The calendar with the given key, if it is writable.
+     * The calendar with the given form value ("key::uri"),
+     * if it is writable. Keys alone are not unique across
+     * calendar providers, so the URI is matched too.
      */
-    private function selectCalendar(array $calendars, string $calendarId): ?ICreateFromString
+    private function selectCalendar(array $calendars, string $value): ?ICreateFromString
     {
+        $parts = explode(self::KEY_SEPARATOR, $value, 2);
+
+        if (!isset($parts[1])) {
+            return null;
+        }
+
+        [$key, $uri] = $parts;
+
         foreach ($calendars as $calendar) {
-            if ($calendar->getKey() === $calendarId) {
+            if ($calendar->getKey() === $key
+                && $calendar->getUri() === $uri) {
                 return $calendar;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Form value identifying a calendar: "key::uri".
+     */
+    private function calendarValue(ICreateFromString $calendar): string
+    {
+        return $calendar->getKey() . self::KEY_SEPARATOR . $calendar->getUri();
     }
 
     /**
@@ -260,12 +284,12 @@ class CalendarController extends Controller
     {
         foreach ($calendars as $calendar) {
             if ($calendar->getDisplayName() === self::CALENDAR_NAME) {
-                return $calendar->getKey();
+                return $this->calendarValue($calendar);
             }
         }
 
         if (isset($calendars[0])) {
-            return $calendars[0]->getKey();
+            return $this->calendarValue($calendars[0]);
         }
 
         return '';
@@ -313,9 +337,9 @@ class CalendarController extends Controller
                 'error' => $error,
                 'l10n' => $this->l10n,
                 'calendars' => array_map(
-                    static function (ICreateFromString $calendar): array {
+                    function (ICreateFromString $calendar): array {
                         return [
-                            'id' => $calendar->getKey(),
+                            'value' => $this->calendarValue($calendar),
                             'displayName' => $calendar->getDisplayName() ?? '',
                         ];
                     },
