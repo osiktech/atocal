@@ -606,7 +606,11 @@ class CalendarController extends Controller
     /**
      * Reject invalid UTF-8 and control characters. Newlines
      * (\n, \r) are only allowed where multi-line text is
-     * expected, e.g. the description.
+     * expected, e.g. the description. Also rejects Unicode
+     * spoofing characters: bidi overrides and line separators
+     * can make text display misleadingly. Format characters
+     * like the zero-width joiner (U+200D) stay allowed, emoji
+     * sequences need them.
      */
     private function assertClean(string $v, string $msg, bool $allowNewlines = false): void
     {
@@ -614,7 +618,13 @@ class CalendarController extends Controller
             ? '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/'
             : '/[\x00-\x1F\x7F]/';
 
-        if (!mb_check_encoding($v, 'UTF-8') || preg_match($re, $v) === 1) {
+        if (!mb_check_encoding($v, 'UTF-8')
+            || preg_match($re, $v) === 1
+            || preg_match(
+                '/[\x{202A}-\x{202E}\x{2066}-\x{2069}\x{2028}\x{2029}\x{0085}]/u',
+                $v
+            ) === 1
+        ) {
             throw new \InvalidArgumentException($msg);
         }
     }
