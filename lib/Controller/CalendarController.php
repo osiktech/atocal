@@ -12,6 +12,7 @@ use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Calendar\ICreateFromString;
 use OCP\Calendar\IManager;
+use OCP\Constansts;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -199,7 +200,8 @@ class CalendarController extends Controller
         $writable = [];
 
         foreach ($calendars as $calendar) {
-            if ($calendar instanceof ICreateFromString) {
+            if ($calendar instanceof ICreateFromString
+                && ($calendar->getPermissions() & Constants::PERMISSION_CREATE) !== 0) {
                 $writable[] = $calendar;
             }
         }
