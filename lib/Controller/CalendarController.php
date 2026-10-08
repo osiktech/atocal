@@ -6,6 +6,7 @@ namespace OCA\AToCal\Controller;
 
 use OCA\AToCal\AppInfo\Application;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\RedirectResponse;
@@ -89,15 +90,19 @@ class CalendarController extends Controller
         string $location = '',
         string $url = ''
     ): TemplateResponse {
-        $data = $this->validateEventData(
-            $summary,
-            $description,
-            $start,
-            $end,
-            $organizer,
-            $location,
-            $url
-        );
+        try {
+            $data = $this->validateEventData(
+                $summary,
+                $description,
+                $start,
+                $end,
+                $organizer,
+                $location,
+                $url
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->renderError($e);
+        }
 
         $user = $this->userSession->getUser();
 
@@ -129,15 +134,19 @@ class CalendarController extends Controller
         string $url = '',
         string $calendarId = ''
     ): RedirectResponse|TemplateResponse {
-        $data = $this->validateEventData(
-            $summary,
-            $description,
-            $start,
-            $end,
-            $organizer,
-            $location,
-            $url
-        );
+        try {
+            $data = $this->validateEventData(
+                $summary,
+                $description,
+                $start,
+                $end,
+                $organizer,
+                $location,
+                $url
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->renderError($e);
+        }
 
         $user = $this->userSession->getUser();
 
@@ -240,6 +249,25 @@ class CalendarController extends Controller
         }
 
         return '';
+    }
+
+    /**
+     * Friendly error page (HTTP 400) for a malformed link,
+     * instead of an uncaught exception and a 500 error page.
+     */
+    private function renderError(\InvalidArgumentException $e): TemplateResponse
+    {
+        return new TemplateResponse(
+            'core',
+            'error',
+            [
+                'errors' => [
+                    ['error' => $e->getMessage(), 'hint' => ''],
+                ],
+            ],
+            TemplateResponse::RENDER_AS_ERROR,
+            Http::STATUS_BAD_REQUEST
+        );
     }
 
     /**
