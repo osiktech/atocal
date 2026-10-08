@@ -29,7 +29,8 @@
         "Organizer contains invalid characters.": "Der Organisator enthält ungültige Zeichen.",
         "Invalid organizer email address.": "Ungültige E-Mail-Adresse des Organisators.",
         "No writable calendar was found in your account. Create one in the Nextcloud Calendar app, then try again.": "In Ihrem Konto wurde kein beschreibbarer Kalender gefunden. Erstellen Sie einen in der Nextcloud-Kalender-App und versuchen Sie es erneut.",
-        "The selected calendar is no longer writable. Pick another one and try again.": "Der ausgewählte Kalender ist nicht mehr beschreibbar. Wählen Sie einen anderen aus und versuchen Sie es erneut."
+        "The selected calendar is no longer writable. Pick another one and try again.": "Der ausgewählte Kalender ist nicht mehr beschreibbar. Wählen Sie einen anderen aus und versuchen Sie es erneut.",
+        "The event could not be created. Please try again.": "Das Meeting konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
     },
     "pluralForms": "nplurals=2; plural=(n != 1);"
 }

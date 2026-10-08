@@ -29,7 +29,8 @@
         "Organizer contains invalid characters.": "Organizer contains invalid characters.",
         "Invalid organizer email address.": "Invalid organizer email address.",
         "No writable calendar was found in your account. Create one in the Nextcloud Calendar app, then try again.": "No writable calendar was found in your account. Create one in the Nextcloud Calendar app, then try again.",
-        "The selected calendar is no longer writable. Pick another one and try again.": "The selected calendar is no longer writable. Pick another one and try again."
+        "The selected calendar is no longer writable. Pick another one and try again.": "The selected calendar is no longer writable. Pick another one and try again.",
+        "The event could not be created. Please try again.": "The event could not be created. Please try again."
     },
     "pluralForms": "nplurals=2; plural=(n != 1);"
 }

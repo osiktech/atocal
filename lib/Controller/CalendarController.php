@@ -20,6 +20,7 @@ use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\IDateTimeZone;
 use OCP\IL10N;
+use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
 
 class CalendarController extends Controller
@@ -67,6 +68,7 @@ class CalendarController extends Controller
     private IURLGenerator $urlGenerator;
     private IDateTimeZone $dateTimeZone;
     private IL10N $l10n;
+    private LoggerInterface $logger;
 
     public function __construct(
         string $appName,
@@ -76,7 +78,8 @@ class CalendarController extends Controller
         IUserSession $userSession,
         IURLGenerator $urlGenerator,
         IDateTimeZone $dateTimeZone,
-        IL10N $l10n
+        IL10N $l10n,
+        LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
 
@@ -86,6 +89,7 @@ class CalendarController extends Controller
         $this->urlGenerator = $urlGenerator;
         $this->dateTimeZone = $dateTimeZone;
         $this->l10n = $l10n;
+        $this->logger = $logger;
     }
 
     /**
@@ -202,7 +206,27 @@ class CalendarController extends Controller
             );
         }
 
-        $this->createEvent($calendar, $data);
+        /*
+         * Backend failures, e.g. CalendarException, must not end
+         * in a generic 500 page. Log the cause, re-render the form.
+         */
+        try {
+            $this->createEvent($calendar, $data);
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                'Failed to create calendar event: ' . $e->getMessage(),
+                ['exception' => $e]
+            );
+
+            return $this->renderConfirm(
+                $data,
+                $calendars,
+                $calendarId,
+                $this->l10n->t(
+                    'The event could not be created. Please try again.'
+                )
+            );
+        }
 
         /*
          * Open the Nextcloud Calendar application if enabled,
