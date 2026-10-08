@@ -36,6 +36,16 @@ class CalendarController extends Controller
      */
     private const DATETIME_LOCAL = 'Y-m-d\TH:i';
 
+    /*
+     * Maximum length of the URL-like fields "location" and "url".
+     */
+    private const MAX_URL_LENGTH = 2000;
+
+    /*
+     * Maximum length of a valid email address (RFC 5321).
+     */
+    private const MAX_EMAIL_LENGTH = 254;
+
     private IManager $calendarManager;
     private IUserSession $userSession;
     private IURLGenerator $urlGenerator;
@@ -378,20 +388,38 @@ class CalendarController extends Controller
         }
 
         if ($location !== '') {
+            $this->assertBoundedLength(
+                $location,
+                self::MAX_URL_LENGTH,
+                'Location is too long.'
+            );
             $this->assertHttpsUrl($location, 'Location must be an HTTPS URL.');
         }
 
         if ($url !== '') {
+            $this->assertBoundedLength(
+                $url,
+                self::MAX_URL_LENGTH,
+                'Meeting URL is too long.'
+            );
             $this->assertHttpsUrl($url, 'Meeting URL must be an HTTPS URL.');
         }
 
-        if ($organizer !== '' && !filter_var(
-            $organizer,
-            FILTER_VALIDATE_EMAIL
-        )) {
-            throw new \InvalidArgumentException(
-                'Invalid organizer email address.'
+        if ($organizer !== '') {
+            $this->assertBoundedLength(
+                $organizer,
+                self::MAX_EMAIL_LENGTH,
+                'Organizer email address is too long.'
             );
+
+            if (!filter_var(
+                $organizer,
+                FILTER_VALIDATE_EMAIL
+            )) {
+                throw new \InvalidArgumentException(
+                    'Invalid organizer email address.'
+                );
+            }
         }
 
         return [
@@ -410,10 +438,21 @@ class CalendarController extends Controller
         $parts = parse_url($value);
 
         $valid = $parts !== false
-            && isset($parts['scheme'])
-            && strtolower($parts['scheme']) === 'https';
+            && isset($parts['scheme'], $parts['host'])
+            && strtolower($parts['scheme']) === 'https'
+            && $parts['host'] !== '';
 
         if (!$valid) {
+            throw new \InvalidArgumentException($message);
+        }
+    }
+
+    /**
+     * Enforce a maximum length, counted in characters.
+     */
+    private function assertBoundedLength(string $value, int $maxLength, string $message): void
+    {
+        if (mb_strlen($value) > $maxLength) {
             throw new \InvalidArgumentException($message);
         }
     }
