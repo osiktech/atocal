@@ -535,11 +535,22 @@ class CalendarController extends Controller
 
     private function assertHttpsUrl(string $value, string $message): void
     {
+        /*
+         * filter_var() plus the regex reject whitespace, backslashes
+         * and non-ASCII characters: browsers may display those
+         * differently than PHP parses them, e.g. IDN homographs.
+         */
+        if (filter_var($value, FILTER_VALIDATE_URL) === false
+            || preg_match('/[^\x21-\x7E]|\\\\/', $value) === 1) {
+            throw new \InvalidArgumentException($message);
+        }
+
         $parts = parse_url($value);
 
         $valid = $parts !== false
             && isset($parts['scheme'], $parts['host'])
             && !isset($parts['user'])
+            && !isset($parts['pass'])
             && strtolower($parts['scheme']) === 'https'
             && $parts['host'] !== '';
 
