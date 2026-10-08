@@ -143,7 +143,7 @@ $h = static function (string $value): string {
                     </button>
 
                     <a
-                        href="<?php if $urlGenerator->getAbsoluteURL('/') ?>"
+                        href="<?php $urlGenerator->getAbsoluteURL('/') ?>"
                         class="secondary"
                     >
                         Cancel
