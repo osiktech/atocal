@@ -46,6 +46,11 @@ the event and submits the form. The event lands in the user's
 Dates carry no timezone and are interpreted in the user's Nextcloud
 timezone (server default as fallback).
 
+## Reminder
+
+Every created event gets a display alarm 15 minutes before it starts
+(`TRIGGER:-PT15M` VALARM). The reminder is not configurable.
+
 Example:
 
 ```

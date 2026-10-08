@@ -16,6 +16,7 @@ use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\IDateTimeZone;
+use Sabre\VObject\Reader;
 
 class CalendarController extends Controller
 {
@@ -23,6 +24,11 @@ class CalendarController extends Controller
      * Target calendar for created events.
      */
     private const CALENDAR_NAME = 'Personal';
+
+    /*
+     * Default reminder: 15 minutes before the event starts.
+     */
+    private const REMINDER_TRIGGER = '-PT15M';
 
     /*
      * datetime-local format as sent by jitsi-launch,
@@ -225,7 +231,21 @@ class CalendarController extends Controller
             $builder->setOrganizer($data['organizer']);
         }
 
-        $builder->createInCalendar($calendar);
+        /*
+         * ICalendarEventBuilder supports no alarms, so the VALARM
+         * is injected into the serialized ICS before writing it.
+         */
+        $vobject = Reader::read($builder->toIcs());
+
+        $vobject->VEVENT->add('VALARM', [
+            'ACTION' => 'DISPLAY',
+            'DESCRIPTION' => 'Reminder',
+            'TRIGGER' => self::REMINDER_TRIGGER,
+        ]);
+
+        $fileName = (string) $vobject->VEVENT->UID . '.ics';
+
+        $calendar->createFromString($fileName, $vobject->serialize());
     }
 
     /**
