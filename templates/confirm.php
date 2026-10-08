@@ -143,7 +143,7 @@ $h = static function (string $value): string {
                     </button>
 
                     <a
-                        href="https://cloud.bnvb-ingenieure.de/"
+                        href="<?php if $urlGenerator->getAbsoluteURL('/') ?>"
                         class="secondary"
                     >
                         Cancel
