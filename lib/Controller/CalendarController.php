@@ -21,7 +21,7 @@ use Sabre\VObject\Reader;
 class CalendarController extends Controller
 {
     /*
-     * Target calendar for created events.
+     * Preferred calendar, preselected in the dropdown if present.
      */
     private const CALENDAR_NAME = 'Personal';
 
@@ -88,7 +88,17 @@ class CalendarController extends Controller
             $url
         );
 
-        return $this->renderConfirm($data);
+        $user = $this->userSession->getUser();
+
+        $calendars = $user === null
+            ? []
+            : $this->findWritableCalendars($user->getUID());
+
+        return $this->renderConfirm(
+            $data,
+            $calendars,
+            $this->defaultCalendarId($calendars)
+        );
     }
 
     /**
@@ -105,7 +115,8 @@ class CalendarController extends Controller
         string $end = '',
         string $organizer = '',
         string $location = '',
-        string $url = ''
+        string $url = '',
+        string $calendarId = ''
     ): RedirectResponse|TemplateResponse {
         $data = $this->validateEventData(
             $summary,
@@ -123,7 +134,13 @@ class CalendarController extends Controller
             throw new \RuntimeException('No authenticated Nextcloud user.');
         }
 
-        $calendar = $this->findWritableCalendar($user->getUID());
+        $calendars = $this->findWritableCalendars($user->getUID());
+
+        if ($calendarId === '') {
+            $calendarId = $this->defaultCalendarId($calendars);
+        }
+
+        $calendar = $this->selectCalendar($calendars, $calendarId);
 
         /*
          * Friendly error instead of a hard server error page.
@@ -131,10 +148,14 @@ class CalendarController extends Controller
         if ($calendar === null) {
             return $this->renderConfirm(
                 $data,
-                'No writable calendar named "'
-                . self::CALENDAR_NAME
-                . '" was found in your account. Create it in the '
-                . 'Nextcloud Calendar app, then try again.'
+                $calendars,
+                $calendarId,
+                $calendars === []
+                    ? 'No writable calendar was found in your account. '
+                    . 'Create one in the Nextcloud Calendar app, '
+                    . 'then try again.'
+                    : 'The selected calendar is no longer writable. '
+                    . 'Pick another one and try again.'
             );
         }
 
@@ -151,12 +172,12 @@ class CalendarController extends Controller
     }
 
     /**
-     * The user's "Personal" calendar.
+     * All writable calendars of the given principal.
      *
      * getCalendarsForPrincipal() returns ICalendar objects.
      * Only calendars implementing ICreateFromString are writable.
      */
-    private function findWritableCalendar(string $userId): ?ICreateFromString
+    private function findWritableCalendars(string $userId): array
     {
         /*
          * IManager calendars are queried via the principal URI.
@@ -165,12 +186,24 @@ class CalendarController extends Controller
 
         $calendars = $this->calendarManager->getCalendarsForPrincipal($principalUri);
 
-        foreach ($calendars as $calendar) {
-            if (!$calendar instanceof ICreateFromString) {
-                continue;
-            }
+        $writable = [];
 
-            if ($calendar->getDisplayName() === self::CALENDAR_NAME) {
+        foreach ($calendars as $calendar) {
+            if ($calendar instanceof ICreateFromString) {
+                $writable[] = $calendar;
+            }
+        }
+
+        return $writable;
+    }
+
+    /**
+     * The calendar with the given key, if it is writable.
+     */
+    private function selectCalendar(array $calendars, string $calendarId): ?ICreateFromString
+    {
+        foreach ($calendars as $calendar) {
+            if ($calendar->getKey() === $calendarId) {
                 return $calendar;
             }
         }
@@ -179,10 +212,33 @@ class CalendarController extends Controller
     }
 
     /**
+     * Key of the calendar to preselect: the preferred
+     * CALENDAR_NAME if present, otherwise the first one.
+     */
+    private function defaultCalendarId(array $calendars): string
+    {
+        foreach ($calendars as $calendar) {
+            if ($calendar->getDisplayName() === self::CALENDAR_NAME) {
+                return $calendar->getKey();
+            }
+        }
+
+        if (isset($calendars[0])) {
+            return $calendars[0]->getKey();
+        }
+
+        return '';
+    }
+
+    /**
      * Render the confirmation page, optionally with an error message.
      */
-    private function renderConfirm(array $data, string $error = ''): TemplateResponse
-    {
+    private function renderConfirm(
+        array $data,
+        array $calendars,
+        string $calendarId = '',
+        string $error = ''
+    ): TemplateResponse {
         return new TemplateResponse(
             Application::APP_ID,
             'confirm',
@@ -195,6 +251,16 @@ class CalendarController extends Controller
                 'location' => $data['location'],
                 'url' => $data['url'],
                 'error' => $error,
+                'calendars' => array_map(
+                    static function (ICreateFromString $calendar): array {
+                        return [
+                            'id' => $calendar->getKey(),
+                            'displayName' => $calendar->getDisplayName() ?? '',
+                        ];
+                    },
+                    $calendars
+                ),
+                'calendarId' => $calendarId,
                 'cancelUrl' => $this->urlGenerator->getAbsoluteURL('/'),
                 'createUrl' => $this->urlGenerator->linkToRoute(
                     Application::APP_ID . '.calendar.create'
