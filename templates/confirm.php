@@ -25,6 +25,11 @@ $h = static function (string $value): string {
                 Nextcloud Calendar.
             </p>
 
+            <p class="atocal-notice">
+                This request came from an external link.
+                Only continue if you trust its source.
+            </p>
+
             <?php if ($_['error'] !== ''): ?>
                 <div class="atocal-error">
                     <?= $h($_['error']) ?>
