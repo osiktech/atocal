@@ -19,6 +19,7 @@ use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\IDateTimeZone;
+use OCP\IL10N;
 use Sabre\VObject\Reader;
 
 class CalendarController extends Controller
@@ -60,6 +61,7 @@ class CalendarController extends Controller
     private IUserSession $userSession;
     private IURLGenerator $urlGenerator;
     private IDateTimeZone $dateTimeZone;
+    private IL10N $l10n;
 
     public function __construct(
         string $appName,
@@ -68,7 +70,8 @@ class CalendarController extends Controller
         IAppManager $appManager,
         IUserSession $userSession,
         IURLGenerator $urlGenerator,
-        IDateTimeZone $dateTimeZone
+        IDateTimeZone $dateTimeZone,
+        IL10N $l10n
     ) {
         parent::__construct($appName, $request);
 
@@ -77,6 +80,7 @@ class CalendarController extends Controller
         $this->userSession = $userSession;
         $this->urlGenerator = $urlGenerator;
         $this->dateTimeZone = $dateTimeZone;
+        $this->l10n = $l10n;
     }
 
     /**
@@ -181,11 +185,15 @@ class CalendarController extends Controller
                 $calendars,
                 $calendarId,
                 $calendars === []
-                    ? 'No writable calendar was found in your account. '
-                    . 'Create one in the Nextcloud Calendar app, '
-                    . 'then try again.'
-                    : 'The selected calendar is no longer writable. '
-                    . 'Pick another one and try again.'
+                    ? $this->l10n->t(
+                        'No writable calendar was found in your account. '
+                        . 'Create one in the Nextcloud Calendar app, '
+                        . 'then try again.'
+                    )
+                    : $this->l10n->t(
+                        'The selected calendar is no longer writable. '
+                        . 'Pick another one and try again.'
+                    )
             );
         }
 
@@ -303,6 +311,7 @@ class CalendarController extends Controller
                 'location' => $data['location'],
                 'url' => $data['url'],
                 'error' => $error,
+                'l10n' => $this->l10n,
                 'calendars' => array_map(
                     static function (ICreateFromString $calendar): array {
                         return [
@@ -404,31 +413,31 @@ class CalendarController extends Controller
 
         if ($summary === '') {
             throw new \InvalidArgumentException(
-                'Meeting title is required.'
+                $this->l10n->t('Meeting title is required.')
             );
         }
 
         if (mb_strlen($summary) > 255) {
             throw new \InvalidArgumentException(
-                'Meeting title is too long.'
+                $this->l10n->t('Meeting title is too long.')
             );
         }
 
         $this->assertClean(
             $summary,
-            'Meeting title contains invalid characters.'
+            $this->l10n->t('Meeting title contains invalid characters.')
         );
 
         if ($description !== '' && mb_strlen($description) > 10000) {
             throw new \InvalidArgumentException(
-                'Meeting description is too long.'
+                $this->l10n->t('Meeting description is too long.')
             );
         }
 
         if ($description !== '') {
             $this->assertClean(
                 $description,
-                'Meeting description contains invalid characters.',
+                $this->l10n->t('Meeting description contains invalid characters.'),
                 true
             );
         }
@@ -438,7 +447,7 @@ class CalendarController extends Controller
 
         if ($endDate <= $startDate) {
             throw new \InvalidArgumentException(
-                'End time must be after start time.'
+                $this->l10n->t('End time must be after start time.')
             );
         }
 
@@ -446,37 +455,37 @@ class CalendarController extends Controller
             $this->assertBoundedLength(
                 $location,
                 self::MAX_URL_LENGTH,
-                'Location is too long.'
+                $this->l10n->t('Location is too long.')
             );
             $this->assertClean(
                 $location,
-                'Location contains invalid characters.'
+                $this->l10n->t('Location contains invalid characters.')
             );
-            $this->assertHttpsUrl($location, 'Location must be an HTTPS URL.');
+            $this->assertHttpsUrl($location, $this->l10n->t('Location must be an HTTPS URL.'));
         }
 
         if ($url !== '') {
             $this->assertBoundedLength(
                 $url,
                 self::MAX_URL_LENGTH,
-                'Meeting URL is too long.'
+                $this->l10n->t('Meeting URL is too long.')
             );
             $this->assertClean(
                 $url,
-                'Meeting URL contains invalid characters.'
+                $this->l10n->t('Meeting URL contains invalid characters.')
             );
-            $this->assertHttpsUrl($url, 'Meeting URL must be an HTTPS URL.');
+            $this->assertHttpsUrl($url, $this->l10n->t('Meeting URL must be an HTTPS URL.'));
         }
 
         if ($organizer !== '') {
             $this->assertBoundedLength(
                 $organizer,
                 self::MAX_EMAIL_LENGTH,
-                'Organizer email address is too long.'
+                $this->l10n->t('Organizer email address is too long.')
             );
             $this->assertClean(
                 $organizer,
-                'Organizer contains invalid characters.'
+                $this->l10n->t('Organizer contains invalid characters.')
             );
 
             if (!filter_var(
@@ -484,7 +493,7 @@ class CalendarController extends Controller
                 FILTER_VALIDATE_EMAIL
             )) {
                 throw new \InvalidArgumentException(
-                    'Invalid organizer email address.'
+                    $this->l10n->t('Invalid organizer email address.')
                 );
             }
         }
@@ -552,7 +561,7 @@ class CalendarController extends Controller
 
         if ($date === false) {
             throw new \InvalidArgumentException(
-                'Invalid date/time.'
+                $this->l10n->t('Invalid date/time.')
             );
         }
 

@@ -9,6 +9,8 @@ $h = static function (string $value): string {
         'UTF-8'
     );
 };
+
+$l = $_['l10n'];
 ?>
 
 <div id="app-content">
@@ -21,13 +23,17 @@ $h = static function (string $value): string {
             </h1>
 
             <p class="atocal-intro">
-                The following meeting will be added to your
-                Nextcloud Calendar.
+                <?= $h($l->t(
+                    'The following meeting will be added to your '
+                    . 'Nextcloud Calendar.'
+                )) ?>
             </p>
 
             <p class="atocal-notice">
-                This request came from an external link.
-                Only continue if you trust its source.
+                <?= $h($l->t(
+                    'This request came from an external link. '
+                    . 'Only continue if you trust its source.'
+                )) ?>
             </p>
 
             <?php if ($_['error'] !== ''): ?>
@@ -39,13 +45,13 @@ $h = static function (string $value): string {
             <div class="atocal-details">
 
                 <div class="atocal-row">
-                    <strong>Title</strong>
+                    <strong><?= $h($l->t('Title')) ?></strong>
                     <span><?= $h($_['summary']) ?></span>
                 </div>
 
                 <?php if ($_['description'] !== ''): ?>
                     <div class="atocal-row">
-                        <strong>Description</strong>
+                        <strong><?= $h($l->t('Description')) ?></strong>
                         <span class="description">
                             <?= nl2br($h($_['description'])) ?>
                         </span>
@@ -53,25 +59,25 @@ $h = static function (string $value): string {
                 <?php endif; ?>
 
                 <div class="atocal-row">
-                    <strong>Start</strong>
+                    <strong><?= $h($l->t('Start')) ?></strong>
                     <span><?= $h(str_replace('T', ' ', $_['start'])) ?></span>
                 </div>
 
                 <div class="atocal-row">
-                    <strong>End</strong>
+                    <strong><?= $h($l->t('End')) ?></strong>
                     <span><?= $h(str_replace('T', ' ', $_['end'])) ?></span>
                 </div>
 
                 <?php if ($_['organizer'] !== ''): ?>
                     <div class="atocal-row">
-                        <strong>Organizer</strong>
+                        <strong><?= $h($l->t('Organizer')) ?></strong>
                         <span><?= $h($_['organizer']) ?></span>
                     </div>
                 <?php endif; ?>
 
                 <?php if ($_['location'] !== ''): ?>
                     <div class="atocal-row">
-                        <strong>Location</strong>
+                        <strong><?= $h($l->t('Location')) ?></strong>
                         <span>
                             <a
                                 href="<?= $h($_['location']) ?>"
@@ -86,7 +92,7 @@ $h = static function (string $value): string {
 
                 <?php if ($_['url'] !== '' && $_['url'] !== $_['location']): ?>
                     <div class="atocal-row">
-                        <strong>Link</strong>
+                        <strong><?= $h($l->t('Link')) ?></strong>
                         <span>
                             <a
                                 href="<?= $h($_['url']) ?>"
@@ -108,7 +114,7 @@ $h = static function (string $value): string {
                 <?php if ($_['calendars'] !== []): ?>
                     <div class="atocal-row">
                         <label for="atocal-calendar">
-                            <strong>Calendar</strong>
+                            <strong><?= $h($l->t('Calendar')) ?></strong>
                         </label>
                         <select id="atocal-calendar" name="calendarId">
                             <?php foreach ($_['calendars'] as $calendar): ?>
@@ -177,14 +183,14 @@ $h = static function (string $value): string {
                         type="submit"
                         class="primary"
                     >
-                        Add to Nextcloud Calendar
+                        <?= $h($l->t('Add to Nextcloud Calendar')) ?>
                     </button>
 
                     <a
                         href="<?= $h($_['cancelUrl']) ?>"
                         class="secondary"
                     >
-                        Cancel
+                        <?= $h($l->t('Cancel')) ?>
                     </a>
 
                 </div>
