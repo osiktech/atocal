@@ -79,6 +79,21 @@ $h = static function (string $value): string {
                     </div>
                 <?php endif; ?>
 
+                <?php if ($_['url'] !== '' && $_['url'] !== $_['location']): ?>
+                    <div class="atocal-row">
+                        <strong>Link</strong>
+                        <span>
+                            <a
+                                href="<?= $h($_['url']) ?>"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <?= $h($_['url']) ?>
+                            </a>
+                        </span>
+                    </div>
+                <?php endif; ?>
+
             </div>
 
             <form
