@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\AToCal\Controller;
 
 use OCA\AToCal\AppInfo\Application;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -49,6 +50,7 @@ class CalendarController extends Controller
     private const MAX_EMAIL_LENGTH = 254;
 
     private IManager $calendarManager;
+    private IAppManager $appManager;
     private IUserSession $userSession;
     private IURLGenerator $urlGenerator;
     private IDateTimeZone $dateTimeZone;
@@ -57,6 +59,7 @@ class CalendarController extends Controller
         string $appName,
         IRequest $request,
         IManager $calendarManager,
+        IAppManager $appManager,
         IUserSession $userSession,
         IURLGenerator $urlGenerator,
         IDateTimeZone $dateTimeZone
@@ -64,6 +67,7 @@ class CalendarController extends Controller
         parent::__construct($appName, $request);
 
         $this->calendarManager = $calendarManager;
+        $this->appManager = $appManager;
         $this->userSession = $userSession;
         $this->urlGenerator = $urlGenerator;
         $this->dateTimeZone = $dateTimeZone;
@@ -182,11 +186,13 @@ class CalendarController extends Controller
         $this->createEvent($calendar, $data);
 
         /*
-         * Open the Nextcloud Calendar application.
+         * Open the Nextcloud Calendar application if enabled,
+         * otherwise the Nextcloud start page. linkToRoute()
+         * would throw for a disabled Calendar app.
          */
-        $calendarUrl = $this->urlGenerator->linkToRoute(
-            'calendar.view.index'
-        );
+        $calendarUrl = $this->appManager->isEnabledForUser('calendar', $user)
+            ? $this->urlGenerator->linkToRoute('calendar.view.index')
+            : $this->urlGenerator->getAbsoluteURL('/');
 
         return new RedirectResponse($calendarUrl);
     }
