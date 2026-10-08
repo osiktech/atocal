@@ -12,7 +12,7 @@ use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Calendar\ICreateFromString;
 use OCP\Calendar\IManager;
-use OCP\Constansts;
+use OCP\Constants;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -374,9 +374,22 @@ class CalendarController extends Controller
             );
         }
 
+        $this->assertClean(
+            $summary,
+            'Meeting title contains invalid characters.'
+        );
+
         if ($description !== '' && mb_strlen($description) > 10000) {
             throw new \InvalidArgumentException(
                 'Meeting description is too long.'
+            );
+        }
+
+        if ($description !== '') {
+            $this->assertClean(
+                $description,
+                'Meeting description contains invalid characters.',
+                true
             );
         }
 
@@ -395,6 +408,10 @@ class CalendarController extends Controller
                 self::MAX_URL_LENGTH,
                 'Location is too long.'
             );
+            $this->assertClean(
+                $location,
+                'Location contains invalid characters.'
+            );
             $this->assertHttpsUrl($location, 'Location must be an HTTPS URL.');
         }
 
@@ -404,6 +421,10 @@ class CalendarController extends Controller
                 self::MAX_URL_LENGTH,
                 'Meeting URL is too long.'
             );
+            $this->assertClean(
+                $url,
+                'Meeting URL contains invalid characters.'
+            );
             $this->assertHttpsUrl($url, 'Meeting URL must be an HTTPS URL.');
         }
 
@@ -412,6 +433,10 @@ class CalendarController extends Controller
                 $organizer,
                 self::MAX_EMAIL_LENGTH,
                 'Organizer email address is too long.'
+            );
+            $this->assertClean(
+                $organizer,
+                'Organizer contains invalid characters.'
             );
 
             if (!filter_var(
@@ -441,6 +466,7 @@ class CalendarController extends Controller
 
         $valid = $parts !== false
             && isset($parts['scheme'], $parts['host'])
+            && !isset($parts['user'])
             && strtolower($parts['scheme']) === 'https'
             && $parts['host'] !== '';
 
@@ -491,5 +517,21 @@ class CalendarController extends Controller
         }
 
         return $date;
+    }
+
+    /**
+     * Reject invalid UTF-8 and control characters. Newlines
+     * (\n, \r) are only allowed where multi-line text is
+     * expected, e.g. the description.
+     */
+    private function assertClean(string $v, string $msg, bool $allowNewlines = false): void
+    {
+        $re = $allowNewlines
+            ? '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/'
+            : '/[\x00-\x1F\x7F]/';
+
+        if (!mb_check_encoding($v, 'UTF-8') || preg_match($re, $v) === 1) {
+            throw new \InvalidArgumentException($msg);
+        }
     }
 }
