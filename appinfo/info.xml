@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-  <id>jitsi_calendar</id>
-  <name>Jitsi Calendar</name>
-  <summary>Create Jitsi meetings in the user's Nextcloud Calendar</summary>
+  <id>atocal</id>
+  <name>Add To Calendar</name>
+  <summary>Create events in the user's Nextcloud Calendar</summary>
   <description>
-    Allows the Jitsi meeting launcher to create calendar events in the authenticated user's Nextcloud Calendar.
+    Allows remote applications to create calendar events in the authenticated user's Nextcloud Calendar.
   </description>
   <version>1.0.0</version>
   <licence>AGPL</licence>
   <author>Stefan Tollkühn s.tollkuehn@bnvb-ingenieure.de</author>
-  <namespace>JitsiCalendar</namespace>
+  <namespace>AToCal</namespace>
   <category>integration</category>
   <dependencies>
     <nextcloud min-version="34" max-version="35"/>

@@ -12,34 +12,34 @@ $h = static function (string $value): string {
 ?>
 
 <div id="app-content">
-    <div class="jitsi-calendar-container">
+    <div class="atocal-container">
 
-        <div class="jitsi-calendar-card">
+        <div class="atocal-card">
 
             <h1>
-                Add Jitsi Meeting to Calendar
+                Add To Calendar
             </h1>
 
-            <p class="jitsi-calendar-intro">
+            <p class="atocal-intro">
                 The following meeting will be added to your
                 Nextcloud Calendar.
             </p>
 
             <?php if ($_['error'] !== ''): ?>
-                <div class="jitsi-calendar-error">
+                <div class="atocal-error">
                     <?= $h($_['error']) ?>
                 </div>
             <?php endif; ?>
 
-            <div class="jitsi-calendar-details">
+            <div class="atocal-details">
 
-                <div class="jitsi-calendar-row">
+                <div class="atocal-row">
                     <strong>Title</strong>
                     <span><?= $h($_['summary']) ?></span>
                 </div>
 
                 <?php if ($_['description'] !== ''): ?>
-                    <div class="jitsi-calendar-row">
+                    <div class="atocal-row">
                         <strong>Description</strong>
                         <span class="description">
                             <?= nl2br($h($_['description'])) ?>
@@ -47,25 +47,25 @@ $h = static function (string $value): string {
                     </div>
                 <?php endif; ?>
 
-                <div class="jitsi-calendar-row">
+                <div class="atocal-row">
                     <strong>Start</strong>
                     <span><?= $h(str_replace('T', ' ', $_['start'])) ?></span>
                 </div>
 
-                <div class="jitsi-calendar-row">
+                <div class="atocal-row">
                     <strong>End</strong>
                     <span><?= $h(str_replace('T', ' ', $_['end'])) ?></span>
                 </div>
 
                 <?php if ($_['organizer'] !== ''): ?>
-                    <div class="jitsi-calendar-row">
+                    <div class="atocal-row">
                         <strong>Organizer</strong>
                         <span><?= $h($_['organizer']) ?></span>
                     </div>
                 <?php endif; ?>
 
                 <?php if ($_['location'] !== ''): ?>
-                    <div class="jitsi-calendar-row">
+                    <div class="atocal-row">
                         <strong>Location</strong>
                         <span>
                             <a
@@ -133,7 +133,7 @@ $h = static function (string $value): string {
                     value="<?= $h($_['url']) ?>"
                 >
 
-                <div class="jitsi-calendar-actions">
+                <div class="atocal-actions">
 
                     <button
                         type="submit"

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\JitsiCalendar\Controller;
+namespace OCA\AToCal\Controller;
 
-use OCA\JitsiCalendar\AppInfo\Application;
+use OCA\AToCal\AppInfo\Application;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\JitsiCalendar\AppInfo;
+namespace OCA\AToCal\AppInfo;
 
-use OCA\JitsiCalendar\Controller\CalendarController;
+use OCA\AToCal\Controller\CalendarController;
 use OCP\AppFramework\App;
 use OCP\AppFramework\IAppContainer;
 
 class Application extends App
 {
-    public const APP_ID = 'jitsi_calendar';
+    public const APP_ID = 'atocal';
 
     public function __construct(array $urlParams = [])
     {
