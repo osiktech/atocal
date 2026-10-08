@@ -29,6 +29,12 @@ class CalendarController extends Controller
     private const CALENDAR_NAME = 'Personal';
 
     /*
+     * Nextcloud Calendar app id, target of the redirect
+     * after the event was created.
+     */
+    private const CALENDAR_APP_ID = 'calendar';
+
+    /*
      * Default reminder: 15 minutes before the event starts.
      */
     private const REMINDER_TRIGGER = '-PT15M';
@@ -190,7 +196,7 @@ class CalendarController extends Controller
          * otherwise the Nextcloud start page. linkToRoute()
          * would throw for a disabled Calendar app.
          */
-        $calendarUrl = $this->appManager->isEnabledForUser('calendar', $user)
+        $calendarUrl = $this->appManager->isEnabledForUser(self::CALENDAR_APP_ID, $user)
             ? $this->urlGenerator->linkToRoute('calendar.view.index')
             : $this->urlGenerator->getAbsoluteURL('/');
 
