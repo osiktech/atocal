@@ -6,6 +6,7 @@ namespace OCA\AToCal\Tests\Unit\Controller;
 
 use OCA\AToCal\Controller\CalendarController;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Calendar\ICalendar;
@@ -897,5 +898,46 @@ class CalendarControllerTest extends TestCase
         );
         $this->assertSame('alice@example.com, not-an-email', $params['attendees']);
         $this->assertSame('5::personal', $params['calendarId']);
+    }
+
+    /*
+     * searchContacts()
+     */
+
+    public function testSearchContactsReturnsMatches(): void
+    {
+        $this->contactsManager->expects($this->once())->method('search')
+            ->with('ali', ['FN', 'EMAIL'])
+            ->willReturn([
+                ['FN' => 'Alice Example', 'EMAIL' => 'alice@example.com'],
+            ]);
+
+        $c = $this->newController();
+
+        $response = $c->searchContacts('ali');
+
+        $this->assertInstanceOf(DataResponse::class, $response);
+        $this->assertSame(
+            [['email' => 'alice@example.com', 'name' => 'Alice Example']],
+            $response->getData()
+        );
+    }
+
+    public function testSearchContactsCapsResults(): void
+    {
+        $contacts = array_map(
+            static fn (int $i): array => [
+                'FN' => "Person $i",
+                'EMAIL' => "person$i@example.com",
+            ],
+            range(1, 60)
+        );
+        $this->contactsManager->method('search')->willReturn($contacts);
+
+        $c = $this->newController();
+
+        $response = $c->searchContacts('person');
+
+        $this->assertCount(50, $response->getData());
     }
 }

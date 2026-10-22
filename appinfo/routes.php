@@ -14,5 +14,10 @@ return [
             'url' => '/create',
             'verb' => 'POST',
         ],
+        [
+            'name' => 'calendar#searchContacts',
+            'url' => '/contacts/search',
+            'verb' => 'GET',
+        ],
     ],
 ];

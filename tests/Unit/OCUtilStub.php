@@ -3,21 +3,57 @@
 declare(strict_types=1);
 
 /*
- * Minimal stand-in for the server class OC_Util, which is not part
- * of the OCP vendor package. Records addStyle() calls for assertions.
+ * Minimal stand-ins for server classes that are not part of
+ * the OCP vendor package. OC_Util records addStyle() calls,
+ * the OC classes satisfy the lookups that OCP\Util::addScript()
+ * triggers for app scripts.
  */
-if (!class_exists(\OC_Util::class, false)) {
-	class OC_Util
+namespace OC {
+	class AppScriptDependency
 	{
-		/** @var list<array{string, ?string, bool}> */
-		public static array $styles = [];
+		public function __construct(string $app, array $deps = []) {}
 
-		public static function addStyle(
-			string $application,
-			?string $file = null,
-			bool $prepend = false
-		): void {
-			self::$styles[] = [$application, $file, $prepend];
+		public function addDep(string $dep): void {}
+	}
+}
+
+namespace {
+	class OC
+	{
+		public static ?object $server = null;
+	}
+
+	class AToCalFakeL10NFactory
+	{
+		public function findLanguage(string $app): string
+		{
+			return 'en';
 		}
 	}
+
+	class AToCalFakeServer
+	{
+		public function get(string $serviceName): AToCalFakeL10NFactory
+		{
+			return new AToCalFakeL10NFactory();
+		}
+	}
+
+	if (!class_exists('OC_Util', false)) {
+		class OC_Util
+		{
+			/** @var list<array{string, ?string, bool}> */
+			public static array $styles = [];
+
+			public static function addStyle(
+				string $application,
+				?string $file = null,
+				bool $prepend = false
+			): void {
+				self::$styles[] = [$application, $file, $prepend];
+			}
+		}
+	}
+
+	OC::$server ??= new AToCalFakeServer();
 }

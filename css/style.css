@@ -112,6 +112,49 @@
     appearance: none;
 }
 
+/*
+ * Live contact search results, anchored to the invitee wrapper.
+ */
+.atocal-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin: 2px 0 0;
+    padding: 4px;
+    list-style: none;
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.atocal-suggestions button {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-main-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.atocal-suggestions li.atocal-active > button,
+.atocal-suggestions button:hover {
+    background: var(--color-background-hover);
+}
+
+.atocal-suggestions .atocal-suggestion-email {
+    color: var(--color-text-maxcontrast);
+}
+
 .atocal-row select,
 .atocal-row input[type="text"] {
     align-self: center;

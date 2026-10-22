@@ -141,6 +141,7 @@ $l = $_['l10n'];
                             name="attendees"
                             type="text"
                             list="atocal-contact-emails"
+                            data-search-url="<?= $h($_['contactsSearchUrl']) ?>"
                             value="<?= $h($_['attendees']) ?>"
                             placeholder="<?= $h(
                                 $l->t('Email addresses, comma-separated')

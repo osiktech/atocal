@@ -11,6 +11,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\RedirectResponse;
+use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Calendar\ICreateFromString;
 use OCP\Calendar\IManager;
@@ -293,6 +294,19 @@ class CalendarController extends Controller
     }
 
     /**
+     * Live contact search for the invitee input.
+     *
+     * Read-only GET endpoint, needs no CSRF protection.
+     *
+     * @return DataResponse<Http::STATUS_OK, list<array{email: string, name: string}>>
+     */
+    #[NoAdminRequired]
+    public function searchContacts(string $query = ''): DataResponse
+    {
+        return new DataResponse($this->contactSuggestions($query));
+    }
+
+    /**
      * All writable calendars of the given principal.
      *
      * getCalendarsForPrincipal() returns ICalendar objects.
@@ -402,10 +416,11 @@ class CalendarController extends Controller
         array $contacts = []
     ): TemplateResponse {
         /*
-         * Stylesheets are not auto-loaded, css/style.css
-         * must be registered for the page layout.
+         * Stylesheets and scripts are not auto-loaded, they must
+         * be registered for the page layout.
          */
         Util::addStyle(Application::APP_ID, 'style');
+        Util::addScript(Application::APP_ID, 'invitees');
 
         return new TemplateResponse(
             Application::APP_ID,
@@ -432,6 +447,9 @@ class CalendarController extends Controller
                 'calendarId' => $calendarId,
                 'attendees' => $attendees,
                 'contacts' => $contacts,
+                'contactsSearchUrl' => $this->urlGenerator->linkToRoute(
+                    Application::APP_ID . '.calendar.searchContacts'
+                ),
                 'cancelUrl' => $this->urlGenerator->getAbsoluteURL('/'),
                 'createUrl' => $this->urlGenerator->linkToRoute(
                     Application::APP_ID . '.calendar.create'
@@ -485,16 +503,17 @@ class CalendarController extends Controller
     }
 
     /**
-     * Address book entries with an email address, offered as
-     * autocomplete options by the invite input.
+     * Address book entries with an email address, offered by the
+     * invitee input: as autocomplete options on the initial page
+     * and as live search results while typing.
      *
      * @return list<array{email: string, name: string}>
      */
-    private function contactSuggestions(): array
+    private function contactSuggestions(string $query = ''): array
     {
         $contacts = [];
 
-        $results = $this->contactsManager->search('', ['FN', 'EMAIL']);
+        $results = $this->contactsManager->search(trim($query), ['FN', 'EMAIL']);
 
         foreach ($results ?? [] as $result) {
             $name = (string)($result['FN'] ?? '');
