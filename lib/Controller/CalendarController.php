@@ -20,6 +20,7 @@ use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\IDateTimeZone;
 use OCP\IL10N;
+use OCP\Util;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
 
@@ -347,6 +348,12 @@ class CalendarController extends Controller
         string $calendarId = '',
         string $error = ''
     ): TemplateResponse {
+        /*
+         * Stylesheets are not auto-loaded, css/style.css
+         * must be registered for the page layout.
+         */
+        Util::addStyle(Application::APP_ID, 'style');
+
         return new TemplateResponse(
             Application::APP_ID,
             'confirm',

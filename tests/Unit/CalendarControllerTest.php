@@ -24,6 +24,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
+require_once __DIR__ . '/OCUtilStub.php';
+
 class CalendarControllerTest extends TestCase
 {
     private IManager&MockObject $calendarManager;
@@ -707,6 +709,22 @@ class CalendarControllerTest extends TestCase
         $this->assertSame(
             'End time must be after start time.',
             $response->getParams()['errors'][0]['error']
+        );
+    }
+
+    public function testConfirmRegistersStylesheet(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+        $this->setUpWritableCalendars();
+        $this->urlGenerator->method('getAbsoluteURL')->willReturn('https://cloud.example.com/');
+
+        $c = $this->newController();
+
+        $c->confirm('Weekly sync', '', '2026-10-07T14:15', '2026-10-07T15:15');
+
+        $this->assertContains(
+            ['atocal', 'style', false],
+            \OC_Util::$styles
         );
     }
 }
