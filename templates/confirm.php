@@ -135,7 +135,7 @@ $l = $_['l10n'];
                     <label for="atocal-attendees">
                         <strong><?= $h($l->t('Invitees')) ?></strong>
                     </label>
-                    <span>
+                    <span class="atocal-select">
                         <input
                             id="atocal-attendees"
                             name="attendees"
