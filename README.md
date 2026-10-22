@@ -67,7 +67,7 @@ https://cloud.example.com/apps/atocal/confirm?summary=Kickoff&start=2026-10-12T1
 ## Install
 
 Copy this directory to the Nextcloud server as
-`custom_apps/atocal`, then:
+`apps/atocal`, then:
 
 ```
 occ app:enable atocal
