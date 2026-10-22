@@ -296,11 +296,14 @@ class CalendarController extends Controller
     /**
      * Live contact search for the invitee input.
      *
-     * Read-only GET endpoint, needs no CSRF protection.
+     * Read-only GET endpoint without side effects, so no CSRF
+     * protection is needed: the browser fetch sends no request
+     * token and would otherwise get a 412 response.
      *
      * @return DataResponse<Http::STATUS_OK, list<array{email: string, name: string}>>
      */
     #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function searchContacts(string $query = ''): DataResponse
     {
         return new DataResponse($this->contactSuggestions($query));
