@@ -72,7 +72,8 @@
     overflow-wrap: anywhere;
 }
 
-.atocal-row select {
+.atocal-row select,
+.atocal-row input[type="text"] {
     align-self: center;
     width: 100%;
     max-width: 280px;
@@ -123,14 +124,16 @@
     border-color: var(--color-primary-element);
 }
 
-.atocal-row select:hover {
+.atocal-row select:hover,
+.atocal-row input[type="text"]:hover {
     border-color: var(--color-primary-element);
 }
 
 /* Keyboard navigation must stay visible */
 .atocal-actions button:focus-visible,
 .atocal-actions a:focus-visible,
-.atocal-row select:focus-visible {
+.atocal-row select:focus-visible,
+.atocal-row input[type="text"]:focus-visible {
     outline: 2px solid var(--color-primary-element);
     outline-offset: 2px;
 }
@@ -152,7 +155,8 @@
         padding: 12px 0;
     }
 
-    .atocal-row select {
+    .atocal-row select,
+    .atocal-row input[type="text"] {
         max-width: none;
     }
 

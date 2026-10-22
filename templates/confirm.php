@@ -129,6 +129,33 @@ $l = $_['l10n'];
                     </div>
                 <?php endif; ?>
 
+                <div class="atocal-row">
+                    <label for="atocal-attendees">
+                        <strong><?= $h($l->t('Invitees')) ?></strong>
+                    </label>
+                    <span>
+                        <input
+                            id="atocal-attendees"
+                            name="attendees"
+                            type="text"
+                            list="atocal-contact-emails"
+                            value="<?= $h($_['attendees']) ?>"
+                            placeholder="<?= $h(
+                                $l->t('Email addresses, comma-separated')
+                            ) ?>"
+                        >
+                        <?php if ($_['contacts'] !== []): ?>
+                            <datalist id="atocal-contact-emails">
+                                <?php foreach ($_['contacts'] as $contact): ?>
+                                    <option
+                                        value="<?= $h($contact['email']) ?>"
+                                    ><?= $h($contact['name']) ?></option>
+                                <?php endforeach; ?>
+                            </datalist>
+                        <?php endif; ?>
+                    </span>
+                </div>
+
                 <input
                     type="hidden"
                     name="requesttoken"

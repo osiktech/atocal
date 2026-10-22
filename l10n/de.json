@@ -30,7 +30,11 @@
         "Invalid organizer email address.": "Ungültige E-Mail-Adresse des Organisators.",
         "No writable calendar was found in your account. Create one in the Nextcloud Calendar app, then try again.": "In deinem Konto wurde kein beschreibbarer Kalender gefunden. Erstelle einen in der Nextcloud-Kalender-App und versuche es erneut.",
         "The selected calendar is no longer writable. Pick another one and try again.": "Der ausgewählte Kalender ist nicht mehr beschreibbar. Wähle einen anderen aus und versuche es erneut.",
-        "The event could not be created. Please try again.": "Das Meeting konnte nicht erstellt werden. Bitte versuche es erneut."
+        "The event could not be created. Please try again.": "Das Meeting konnte nicht erstellt werden. Bitte versuche es erneut.",
+        "Invitees": "Teilnehmer",
+        "Email addresses, comma-separated": "E-Mail-Adressen, durch Kommas getrennt",
+        "%s is not a valid email address.": "%s ist keine gültige E-Mail-Adresse.",
+        "A meeting can invite at most %d people.": "Ein Meeting kann höchstens %d Personen einladen."
     },
     "pluralForms": "nplurals=2; plural=(n != 1);"
 }

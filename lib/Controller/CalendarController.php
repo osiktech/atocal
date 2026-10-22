@@ -14,6 +14,7 @@ use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Calendar\ICreateFromString;
 use OCP\Calendar\IManager;
+use OCP\Contacts\IManager as IContactsManager;
 use OCP\Constants;
 use OCP\IRequest;
 use OCP\IURLGenerator;
@@ -63,7 +64,19 @@ class CalendarController extends Controller
      */
     private const MAX_EMAIL_LENGTH = 254;
 
+    /*
+     * Maximum number of people a meeting may invite.
+     */
+    private const MAX_ATTENDEES = 20;
+
+    /*
+     * Address book entries offered as autocomplete options,
+     * keeps the confirm page small on large address books.
+     */
+    private const MAX_CONTACT_SUGGESTIONS = 50;
+
     private IManager $calendarManager;
+    private IContactsManager $contactsManager;
     private IAppManager $appManager;
     private IUserSession $userSession;
     private IURLGenerator $urlGenerator;
@@ -75,6 +88,7 @@ class CalendarController extends Controller
         string $appName,
         IRequest $request,
         IManager $calendarManager,
+        IContactsManager $contactsManager,
         IAppManager $appManager,
         IUserSession $userSession,
         IURLGenerator $urlGenerator,
@@ -85,6 +99,7 @@ class CalendarController extends Controller
         parent::__construct($appName, $request);
 
         $this->calendarManager = $calendarManager;
+        $this->contactsManager = $contactsManager;
         $this->appManager = $appManager;
         $this->userSession = $userSession;
         $this->urlGenerator = $urlGenerator;
@@ -137,7 +152,10 @@ class CalendarController extends Controller
         return $this->renderConfirm(
             $data,
             $calendars,
-            $this->defaultCalendarId($calendars)
+            $this->defaultCalendarId($calendars),
+            '',
+            '',
+            $this->contactSuggestions()
         );
     }
 
@@ -156,7 +174,8 @@ class CalendarController extends Controller
         string $organizer = '',
         string $location = '',
         string $url = '',
-        string $calendarId = ''
+        string $calendarId = '',
+        string $attendees = ''
     ): RedirectResponse|TemplateResponse {
         try {
             $data = $this->validateEventData(
@@ -179,6 +198,34 @@ class CalendarController extends Controller
         }
 
         $calendars = $this->findWritableCalendars($user->getUID());
+
+        /*
+         * Invitees: the input must be rejected before the event
+         * is written, but the user input survives a re-render.
+         */
+        try {
+            $data['attendees'] = $this->parseAttendees($attendees);
+        } catch (\InvalidArgumentException $e) {
+            return $this->renderConfirm(
+                $data,
+                $calendars,
+                $calendarId,
+                $e->getMessage(),
+                $attendees,
+                $this->contactSuggestions()
+            );
+        }
+
+        /*
+         * Display names from the address book end up as ATTENDEE
+         * parameter CN in the event.
+         */
+        if ($data['attendees'] !== []) {
+            $data['attendees'] = $this->withContactNames(
+                $data['attendees'],
+                $this->contactSuggestions()
+            );
+        }
 
         if ($calendarId === '') {
             $calendarId = $this->defaultCalendarId($calendars);
@@ -203,7 +250,9 @@ class CalendarController extends Controller
                     : $this->l10n->t(
                         'The selected calendar is no longer writable. '
                         . 'Pick another one and try again.'
-                    )
+                    ),
+                $attendees,
+                $this->contactSuggestions()
             );
         }
 
@@ -225,7 +274,9 @@ class CalendarController extends Controller
                 $calendarId,
                 $this->l10n->t(
                     'The event could not be created. Please try again.'
-                )
+                ),
+                $attendees,
+                $this->contactSuggestions()
             );
         }
 
@@ -346,7 +397,9 @@ class CalendarController extends Controller
         array $data,
         array $calendars,
         string $calendarId = '',
-        string $error = ''
+        string $error = '',
+        string $attendees = '',
+        array $contacts = []
     ): TemplateResponse {
         /*
          * Stylesheets are not auto-loaded, css/style.css
@@ -377,12 +430,112 @@ class CalendarController extends Controller
                     $calendars
                 ),
                 'calendarId' => $calendarId,
+                'attendees' => $attendees,
+                'contacts' => $contacts,
                 'cancelUrl' => $this->urlGenerator->getAbsoluteURL('/'),
                 'createUrl' => $this->urlGenerator->linkToRoute(
                     Application::APP_ID . '.calendar.create'
                 ),
             ]
         );
+    }
+
+    /**
+     * Attendee emails from the invite input, comma-, semicolon-
+     * or whitespace-separated. Lowercased and deduplicated.
+     * An invalid entry aborts the request.
+     *
+     * @return list<array{email: string, name: string}>
+     */
+    private function parseAttendees(string $input): array
+    {
+        $attendees = [];
+        $seen = [];
+
+        foreach (preg_split('/[\s,;]+/', trim($input)) ?: [] as $part) {
+            $email = strtolower(trim($part));
+
+            if ($email === '' || isset($seen[$email])) {
+                continue;
+            }
+
+            if (count($seen) >= self::MAX_ATTENDEES) {
+                throw new \InvalidArgumentException(
+                    $this->l10n->t(
+                        'A meeting can invite at most %d people.',
+                        [self::MAX_ATTENDEES]
+                    )
+                );
+            }
+
+            if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                throw new \InvalidArgumentException(
+                    $this->l10n->t(
+                        '%s is not a valid email address.',
+                        [$part]
+                    )
+                );
+            }
+
+            $seen[$email] = true;
+            $attendees[] = ['email' => $email, 'name' => ''];
+        }
+
+        return $attendees;
+    }
+
+    /**
+     * Address book entries with an email address, offered as
+     * autocomplete options by the invite input.
+     *
+     * @return list<array{email: string, name: string}>
+     */
+    private function contactSuggestions(): array
+    {
+        $contacts = [];
+
+        $results = $this->contactsManager->search('', ['FN', 'EMAIL']);
+
+        foreach ($results ?? [] as $result) {
+            $name = (string)($result['FN'] ?? '');
+
+            $emails = $result['EMAIL'] ?? [];
+            $emails = is_array($emails) ? $emails : [$emails];
+
+            foreach ($emails as $email) {
+                $email = trim((string)$email);
+
+                if ($email !== ''
+                    && count($contacts) < self::MAX_CONTACT_SUGGESTIONS) {
+                    $contacts[] = ['email' => $email, 'name' => $name];
+                }
+            }
+        }
+
+        return $contacts;
+    }
+
+    /**
+     * Fill attendee display names from the address book.
+     * First match wins, emails are case-insensitive.
+     *
+     * @param list<array{email: string, name: string}> $attendees
+     * @param list<array{email: string, name: string}> $contacts
+     * @return list<array{email: string, name: string}>
+     */
+    private function withContactNames(array $attendees, array $contacts): array
+    {
+        $namesByEmail = [];
+
+        foreach ($contacts as $contact) {
+            $namesByEmail[strtolower($contact['email'])] ??= $contact['name'];
+        }
+
+        foreach ($attendees as $i => $attendee) {
+            $attendees[$i]['name'] = $namesByEmail[$attendee['email']] ?? '';
+        }
+
+        return $attendees;
     }
 
     /**
@@ -422,6 +575,22 @@ class CalendarController extends Controller
             'DESCRIPTION' => 'Reminder',
             'TRIGGER' => self::REMINDER_TRIGGER,
         ]);
+
+        /*
+         * Attendee invitation: the CalDAV backend schedules
+         * (IMIP/iTIP emails) based on these properties.
+         */
+        foreach ($data['attendees'] as $attendee) {
+            $parameters = $attendee['name'] !== ''
+                ? ['CN' => $attendee['name']]
+                : [];
+
+            $vobject->VEVENT->add(
+                'ATTENDEE',
+                'mailto:' . $attendee['email'],
+                $parameters
+            );
+        }
 
         $fileName = (string) $vobject->VEVENT->UID . '.ics';
 

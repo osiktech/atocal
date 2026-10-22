@@ -13,6 +13,7 @@ use OCP\Calendar\ICalendarEventBuilder;
 use OCP\Calendar\ICreateFromString;
 use OCP\Calendar\IManager;
 use OCP\Constants;
+use OCP\Contacts\IManager as IContactsManager;
 use OCP\IDateTimeZone;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -29,6 +30,7 @@ require_once __DIR__ . '/OCUtilStub.php';
 class CalendarControllerTest extends TestCase
 {
     private IManager&MockObject $calendarManager;
+    private IContactsManager&MockObject $contactsManager;
     private IAppManager&MockObject $appManager;
     private IUserSession&MockObject $userSession;
     private IURLGenerator&MockObject $urlGenerator;
@@ -37,6 +39,7 @@ class CalendarControllerTest extends TestCase
     protected function setUp(): void
     {
         $this->calendarManager = $this->createMock(IManager::class);
+        $this->contactsManager = $this->createMock(IContactsManager::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->urlGenerator = $this->createMock(IURLGenerator::class);
@@ -50,13 +53,16 @@ class CalendarControllerTest extends TestCase
 
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnCallback(
-            static fn (string $text) => $text
+            static fn (string $text, array $params = []): string => $params === []
+                ? $text
+                : vsprintf($text, $params)
         );
 
         return new CalendarController(
             'atocal',
             $this->createMock(IRequest::class),
             $this->calendarManager,
+            $this->contactsManager,
             $this->appManager,
             $this->userSession,
             $this->urlGenerator,
@@ -484,6 +490,60 @@ class CalendarControllerTest extends TestCase
             'organizer' => '',
             'location' => '',
             'url' => '',
+            'attendees' => [],
+        ];
+
+        $this->invoke($c, 'createEvent', [$calendar, $data]);
+    }
+
+    /*
+     * createEvent: ATTENDEE injection
+     */
+
+    public function testCreateEventInvitesAttendees(): void
+    {
+        $builder = $this->createMock(ICalendarEventBuilder::class);
+        $builder->method('toIcs')->willReturn(
+            "BEGIN:VCALENDAR\r\n" .
+            "VERSION:2.0\r\n" .
+            "PRODID:-//Nextcloud//AToCal//EN\r\n" .
+            "BEGIN:VEVENT\r\n" .
+            "UID:test-uid-123\r\n" .
+            "SUMMARY:Weekly sync\r\n" .
+            "END:VEVENT\r\n" .
+            "END:VCALENDAR\r\n"
+        );
+        $this->calendarManager->method('createEventBuilder')->willReturn($builder);
+
+        $calendar = $this->mockCalendar('5', 'personal', 'Personal', Constants::PERMISSION_CREATE);
+        $calendar->expects($this->once())->method('createFromString')
+            ->willReturnCallback(function (string $name, string $data): bool {
+                $this->assertStringContainsString(
+                    'ATTENDEE;CN=Alice Example:mailto:alice@example.com',
+                    $data
+                );
+                $this->assertStringContainsString(
+                    'ATTENDEE:mailto:bob@example.com',
+                    $data
+                );
+
+                return true;
+            });
+
+        $c = $this->newController();
+
+        $data = [
+            'summary' => 'Weekly sync',
+            'description' => '',
+            'start' => new \DateTimeImmutable('2026-10-07T14:15:00 UTC'),
+            'end' => new \DateTimeImmutable('2026-10-07T15:15:00 UTC'),
+            'organizer' => '',
+            'location' => '',
+            'url' => '',
+            'attendees' => [
+                ['email' => 'alice@example.com', 'name' => 'Alice Example'],
+                ['email' => 'bob@example.com', 'name' => ''],
+            ],
         ];
 
         $this->invoke($c, 'createEvent', [$calendar, $data]);
@@ -726,5 +786,116 @@ class CalendarControllerTest extends TestCase
             ['atocal', 'style', false],
             \OC_Util::$styles
         );
+    }
+
+    /*
+     * parseAttendees()
+     */
+
+    public function testParseAttendeesNormalizesInput(): void
+    {
+        $c = $this->newController();
+
+        $attendees = $this->invoke($c, 'parseAttendees', [
+            'alice@example.com, BOB@Example.com ;  bob@example.com carl@example.com',
+        ]);
+
+        $this->assertSame([
+            ['email' => 'alice@example.com', 'name' => ''],
+            ['email' => 'bob@example.com', 'name' => ''],
+            ['email' => 'carl@example.com', 'name' => ''],
+        ], $attendees);
+    }
+
+    public function testParseAttendeesEmptyInput(): void
+    {
+        $c = $this->newController();
+
+        $this->assertSame(
+            [],
+            $this->invoke($c, 'parseAttendees', ['  '])
+        );
+    }
+
+    public function testParseAttendeesRejectsInvalidEmail(): void
+    {
+        $c = $this->newController();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('is not a valid email address.');
+
+        $this->invoke($c, 'parseAttendees', ['alice@example.com,not-an-email']);
+    }
+
+    public function testParseAttendeesEnforcesLimit(): void
+    {
+        $c = $this->newController();
+
+        $emails = implode(',', array_map(
+            static fn (int $i): string => "person$i@example.com",
+            range(1, 21)
+        ));
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('A meeting can invite at most 20 people.');
+
+        $this->invoke($c, 'parseAttendees', [$emails]);
+    }
+
+    /*
+     * confirm(): contact suggestions for the datalist
+     */
+
+    public function testConfirmOffersContactSuggestions(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+        $this->setUpWritableCalendars();
+        $this->urlGenerator->method('getAbsoluteURL')->willReturn('https://cloud.example.com/');
+        $this->contactsManager->method('search')->willReturn([
+            ['FN' => 'Alice Example', 'EMAIL' => 'alice@example.com'],
+            ['FN' => 'Bob', 'EMAIL' => ['bob@example.com', 'bob@work.example.com']],
+        ]);
+
+        $c = $this->newController();
+
+        $response = $c->confirm(
+            'Weekly sync',
+            '',
+            '2026-10-07T14:15',
+            '2026-10-07T15:15'
+        );
+
+        $this->assertSame('confirm', $response->getTemplateName());
+        $this->assertSame([
+            ['email' => 'alice@example.com', 'name' => 'Alice Example'],
+            ['email' => 'bob@example.com', 'name' => 'Bob'],
+            ['email' => 'bob@work.example.com', 'name' => 'Bob'],
+        ], $response->getParams()['contacts']);
+    }
+
+    /*
+     * create(): invalid invitee input keeps the form usable
+     */
+
+    public function testCreateInvalidAttendeeRendersConfirm(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+        $this->setUpWritableCalendars();
+
+        $args = $this->validCreateArgs();
+        $args[] = 'alice@example.com, not-an-email';
+
+        $c = $this->newController();
+
+        $response = $c->create(...$args);
+
+        $this->assertSame('confirm', $response->getTemplateName());
+        $params = $response->getParams();
+        $this->assertStringContainsString(
+            'is not a valid email address.',
+            $params['error']
+        );
+        $this->assertSame('alice@example.com, not-an-email', $params['attendees']);
+        $this->assertSame('5::personal', $params['calendarId']);
     }
 }

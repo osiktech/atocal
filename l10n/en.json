@@ -30,7 +30,11 @@
         "Invalid organizer email address.": "Invalid organizer email address.",
         "No writable calendar was found in your account. Create one in the Nextcloud Calendar app, then try again.": "No writable calendar was found in your account. Create one in the Nextcloud Calendar app, then try again.",
         "The selected calendar is no longer writable. Pick another one and try again.": "The selected calendar is no longer writable. Pick another one and try again.",
-        "The event could not be created. Please try again.": "The event could not be created. Please try again."
+        "The event could not be created. Please try again.": "The event could not be created. Please try again.",
+        "Invitees": "Invitees",
+        "Email addresses, comma-separated": "Email addresses, comma-separated",
+        "%s is not a valid email address.": "%s is not a valid email address.",
+        "A meeting can invite at most %d people.": "A meeting can invite at most %d people."
     },
     "pluralForms": "nplurals=2; plural=(n != 1);"
 }
