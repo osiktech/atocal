@@ -103,6 +103,11 @@
     padding-right: 32px;
 }
 
+/* Chrome draws its own datalist arrow on hover; hide the duplicate */
+.atocal-select input::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
 .atocal-select select {
     appearance: none;
 }
