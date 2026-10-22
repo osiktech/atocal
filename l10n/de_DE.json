@@ -34,7 +34,8 @@
         "Invitees": "Teilnehmer",
         "Email addresses, comma-separated": "E-Mail-Adressen, durch Kommas getrennt",
         "%s is not a valid email address.": "%s ist keine gültige E-Mail-Adresse.",
-        "A meeting can invite at most %d people.": "Ein Meeting kann höchstens %d Personen einladen."
+        "A meeting can invite at most %d people.": "Ein Meeting kann höchstens %d Personen einladen.",
+        "Invitee list is too long.": "Die Teilnehmerliste ist zu lang."
     },
     "pluralForms": "nplurals=2; plural=(n != 1);"
 }

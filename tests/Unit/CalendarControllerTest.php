@@ -933,6 +933,16 @@ class CalendarControllerTest extends TestCase
         $this->invoke($c, 'parseAttendees', ['alice@example.com,not-an-email']);
     }
 
+    public function testParseAttendeesRejectsOversizedInput(): void
+    {
+        $c = $this->newController();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invitee list is too long.');
+
+        $this->invoke($c, 'parseAttendees', [str_repeat('x', 6000)]);
+    }
+
     public function testParseAttendeesEnforcesLimit(): void
     {
         $c = $this->newController();
@@ -1044,5 +1054,43 @@ class CalendarControllerTest extends TestCase
         $response = $c->searchContacts('person');
 
         $this->assertCount(50, $response->getData());
+    }
+
+    public function testSearchContactsTruncatesQuery(): void
+    {
+        $this->contactsManager->expects($this->once())->method('search')
+            ->willReturnCallback(
+                static function (string $query): array {
+                    return strlen($query) <= 254
+                        ? [['FN' => 'Alice', 'EMAIL' => 'alice@example.com']]
+                        : [];
+                }
+            );
+
+        $c = $this->newController();
+
+        $response = $c->searchContacts(str_repeat('a', 300));
+
+        $this->assertSame(
+            [['email' => 'alice@example.com', 'name' => 'Alice']],
+            $response->getData()
+        );
+    }
+
+    public function testContactSuggestionsDropControlCharNames(): void
+    {
+        $this->contactsManager->method('search')->willReturn([
+            ['FN' => "Evil\rName", 'EMAIL' => 'evil@example.com'],
+            ['FN' => 'Alice', 'EMAIL' => 'alice@example.com'],
+        ]);
+
+        $c = $this->newController();
+
+        $suggestions = $this->invoke($c, 'contactSuggestions', ['']);
+
+        $this->assertSame([
+            ['email' => 'evil@example.com', 'name' => ''],
+            ['email' => 'alice@example.com', 'name' => 'Alice'],
+        ], $suggestions);
     }
 }

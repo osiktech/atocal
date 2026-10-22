@@ -476,6 +476,17 @@ class CalendarController extends Controller
      */
     private function parseAttendees(string $input): array
     {
+        /*
+         * Bound the raw input: splitting an arbitrarily large
+         * string is a cheap CPU sink and the value is echoed
+         * back into the page on a re-render.
+         */
+        $this->assertBoundedLength(
+            $input,
+            self::MAX_ATTENDEES * (self::MAX_EMAIL_LENGTH + 1),
+            $this->l10n->t('Invitee list is too long.')
+        );
+
         $attendees = [];
         $seen = [];
 
@@ -522,10 +533,27 @@ class CalendarController extends Controller
     {
         $contacts = [];
 
-        $results = $this->contactsManager->search(trim($query), ['FN', 'EMAIL']);
+        /*
+         * The query is the fragment being typed, a full email
+         * address is the longest useful input.
+         */
+        $query = mb_substr(trim($query), 0, self::MAX_EMAIL_LENGTH);
+
+        $results = $this->contactsManager->search($query, ['FN', 'EMAIL']);
 
         foreach ($results ?? [] as $result) {
             $name = (string)($result['FN'] ?? '');
+
+            /*
+             * Contact names become the CN parameter of the ICS
+             * ATTENDEE. Sabre escapes most special characters on
+             * serialization, but a bare carriage return bypasses
+             * its quoting, so names with control characters are
+             * dropped.
+             */
+            if (preg_match('/[\x00-\x1F\x7F]/u', $name) === 1) {
+                $name = '';
+            }
 
             $emails = $result['EMAIL'] ?? [];
             $emails = is_array($emails) ? $emails : [$emails];
