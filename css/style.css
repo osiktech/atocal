@@ -76,7 +76,6 @@
 .atocal-row input[type="text"] {
     align-self: center;
     width: 100%;
-    max-width: 280px;
     padding: 6px 8px;
     border: 1px solid var(--color-border);
     border-radius: 6px;
@@ -153,11 +152,6 @@
         grid-template-columns: 1fr;
         gap: 4px;
         padding: 12px 0;
-    }
-
-    .atocal-row select,
-    .atocal-row input[type="text"] {
-        max-width: none;
     }
 
     .atocal-actions {
