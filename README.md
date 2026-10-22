@@ -41,10 +41,22 @@ the event and submits the form. The event lands in the user's
 | `description` | no | max 10000 chars |
 | `location` | no | HTTPS URL |
 | `url` | no | HTTPS URL; merged into description |
-| `organizer` | no | email address |
+| `organizer` | no | email address; display info only |
 
 Dates carry no timezone and are interpreted in the user's Nextcloud
 timezone (server default as fallback).
+
+## Organizer
+
+The event's ICS `ORGANIZER` is the Nextcloud user's own email
+address. Invitations to attendees are scheduled by the CalDAV
+backend in the calendar owner's name, which only works when the
+organizer matches the owner.
+
+The `organizer` link parameter is shown on the confirm page as
+meeting information and is used as `ORGANIZER` fallback only when
+the user has no profile email — in that case no working
+invitations may be sent, so profile emails should be set.
 
 ## Reminder
 
