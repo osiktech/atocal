@@ -489,6 +489,7 @@ class CalendarControllerTest extends TestCase
             'start' => new \DateTimeImmutable('2026-10-07T14:15:00 UTC'),
             'end' => new \DateTimeImmutable('2026-10-07T15:15:00 UTC'),
             'organizer' => '',
+            'organizerEmail' => '',
             'location' => '',
             'url' => '',
             'attendees' => [],
@@ -539,6 +540,7 @@ class CalendarControllerTest extends TestCase
             'start' => new \DateTimeImmutable('2026-10-07T14:15:00 UTC'),
             'end' => new \DateTimeImmutable('2026-10-07T15:15:00 UTC'),
             'organizer' => '',
+            'organizerEmail' => '',
             'location' => '',
             'url' => '',
             'attendees' => [
@@ -548,6 +550,109 @@ class CalendarControllerTest extends TestCase
         ];
 
         $this->invoke($c, 'createEvent', [$calendar, $data]);
+    }
+
+    /*
+     * createEvent: the calendar owner is the ICS organizer
+     */
+
+    private function skeletonIcs(): string
+    {
+        return
+            "BEGIN:VCALENDAR\r\n" .
+            "VERSION:2.0\r\n" .
+            "PRODID:-//Nextcloud//AToCal//EN\r\n" .
+            "BEGIN:VEVENT\r\n" .
+            "UID:test-uid-123\r\n" .
+            "SUMMARY:Weekly sync\r\n" .
+            "END:VEVENT\r\n" .
+            "END:VCALENDAR\r\n";
+    }
+
+    private function eventBuilderWith(\PHPUnit\Framework\MockObject\MockObject|ICalendarEventBuilder $builder): void
+    {
+        $builder->method('toIcs')->willReturn($this->skeletonIcs());
+        $this->calendarManager->method('createEventBuilder')->willReturn($builder);
+    }
+
+    public function testCreateEventPrefersUserEmailAsOrganizer(): void
+    {
+        $builder = $this->createMock(ICalendarEventBuilder::class);
+        $builder->expects($this->once())->method('setOrganizer')
+            ->with('alice@nextcloud.example');
+        $this->eventBuilderWith($builder);
+
+        $calendar = $this->mockCalendar('5', 'personal', 'Personal', Constants::PERMISSION_CREATE);
+
+        $c = $this->newController();
+
+        $data = [
+            'summary' => 'Weekly sync',
+            'description' => '',
+            'start' => new \DateTimeImmutable('2026-10-07T14:15:00 UTC'),
+            'end' => new \DateTimeImmutable('2026-10-07T15:15:00 UTC'),
+            'organizer' => 'boss@example.com',
+            'organizerEmail' => 'alice@nextcloud.example',
+            'location' => '',
+            'url' => '',
+            'attendees' => [],
+        ];
+
+        $this->invoke($c, 'createEvent', [$calendar, $data]);
+    }
+
+    public function testCreateEventFallsBackToLinkOrganizer(): void
+    {
+        $builder = $this->createMock(ICalendarEventBuilder::class);
+        $builder->expects($this->once())->method('setOrganizer')
+            ->with('boss@example.com');
+        $this->eventBuilderWith($builder);
+
+        $calendar = $this->mockCalendar('5', 'personal', 'Personal', Constants::PERMISSION_CREATE);
+
+        $c = $this->newController();
+
+        $data = [
+            'summary' => 'Weekly sync',
+            'description' => '',
+            'start' => new \DateTimeImmutable('2026-10-07T14:15:00 UTC'),
+            'end' => new \DateTimeImmutable('2026-10-07T15:15:00 UTC'),
+            'organizer' => 'boss@example.com',
+            'organizerEmail' => '',
+            'location' => '',
+            'url' => '',
+            'attendees' => [],
+        ];
+
+        $this->invoke($c, 'createEvent', [$calendar, $data]);
+    }
+
+    /*
+     * create(): the user's email address reaches the event builder
+     */
+
+    public function testCreateUsesUserEmailAsOrganizer(): void
+    {
+        $user = $this->mockUser('alice');
+        $user->method('getEMailAddress')->willReturn('alice@nextcloud.example');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->setUpWritableCalendars();
+
+        $builder = $this->createMock(ICalendarEventBuilder::class);
+        $builder->expects($this->once())->method('setOrganizer')
+            ->with('alice@nextcloud.example');
+        $this->eventBuilderWith($builder);
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
+        $this->urlGenerator->method('linkToRoute')->willReturn('/apps/calendar/');
+
+        $c = $this->newController();
+
+        $args = $this->validCreateArgs();
+        $args[] = '';
+
+        $response = $c->create(...$args);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
     }
 
     /*

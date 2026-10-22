@@ -198,6 +198,12 @@ class CalendarController extends Controller
             throw new \RuntimeException('No authenticated Nextcloud user.');
         }
 
+        /*
+         * The calendar owner must be the ICS organizer so the
+         * CalDAV backend schedules the invitations in their name.
+         */
+        $data['organizerEmail'] = $user->getEMailAddress() ?? '';
+
         $calendars = $this->findWritableCalendars($user->getUID());
 
         /*
@@ -582,8 +588,16 @@ class CalendarController extends Controller
             $builder->setLocation($data['location']);
         }
 
-        if ($data['organizer'] !== '') {
-            $builder->setOrganizer($data['organizer']);
+        /*
+         * Invitations come from the calendar owner, the
+         * organizer of the external link is the fallback.
+         */
+        $organizer = $data['organizerEmail'] !== ''
+            ? $data['organizerEmail']
+            : $data['organizer'];
+
+        if ($organizer !== '') {
+            $builder->setOrganizer($organizer);
         }
 
         /*
