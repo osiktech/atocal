@@ -116,16 +116,18 @@ $l = $_['l10n'];
                         <label for="atocal-calendar">
                             <strong><?= $h($l->t('Calendar')) ?></strong>
                         </label>
-                        <select id="atocal-calendar" name="calendarId">
-                            <?php foreach ($_['calendars'] as $calendar): ?>
-                                <option
-                                    value="<?= $h($calendar['value']) ?>"
-                                    <?= $calendar['value'] === $_['calendarId'] ? 'selected' : '' ?>
-                                >
-                                    <?= $h($calendar['displayName']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <span class="atocal-select">
+                            <select id="atocal-calendar" name="calendarId">
+                                <?php foreach ($_['calendars'] as $calendar): ?>
+                                    <option
+                                        value="<?= $h($calendar['value']) ?>"
+                                        <?= $calendar['value'] === $_['calendarId'] ? 'selected' : '' ?>
+                                    >
+                                        <?= $h($calendar['displayName']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </span>
                     </div>
                 <?php endif; ?>
 

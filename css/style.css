@@ -72,6 +72,37 @@
     overflow-wrap: anywhere;
 }
 
+/*
+ * Select box with a theme-colored chevron instead of the
+ * native arrow, which is not visible on every platform.
+ *
+ * ┌───────────────────────────────┐
+ * │ Personal                 ⌄    │
+ * └───────────────────────────────┘
+ */
+.atocal-select {
+    position: relative;
+    display: block;
+}
+
+.atocal-select::after {
+    content: "";
+    position: absolute;
+    top: calc(50% - 5px);
+    right: 12px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--color-text-maxcontrast);
+    border-bottom: 2px solid var(--color-text-maxcontrast);
+    transform: rotate(45deg);
+    pointer-events: none;
+}
+
+.atocal-select select {
+    appearance: none;
+    padding-right: 32px;
+}
+
 .atocal-row select,
 .atocal-row input[type="text"] {
     align-self: center;
