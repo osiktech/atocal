@@ -37,7 +37,9 @@ async function settle(ms = DEBOUNCE_MS) {
 
 beforeAll(async () => {
   document.body.innerHTML =
-    '<span><input id="atocal-attendees" data-search-url="' + SEARCH_URL + '"></span>';
+    '<span><input id="atocal-attendees" data-search-url="' + SEARCH_URL + '"'
+    + ' role="combobox" aria-autocomplete="list"'
+    + ' aria-controls="atocal-suggestions" aria-expanded="false"></span>';
 
   await import('../../js/invitees.js');
 
@@ -59,6 +61,18 @@ afterEach(async () => {
 });
 
 describe('invitee suggestions', () => {
+  it('marks the input as a combobox controlling the list', () => {
+    expect(input.getAttribute('role')).toBe('combobox');
+    expect(input.getAttribute('aria-autocomplete')).toBe('list');
+
+    /* aria-controls must resolve to the list built by the widget */
+    const controlled = document.getElementById(
+      input.getAttribute('aria-controls')
+    );
+    expect(controlled).toBe(list);
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('renders matching contacts', async () => {
     fetch.mockReturnValue(response([BOB]));
 

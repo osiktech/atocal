@@ -30,6 +30,7 @@
   }
 
   var list = document.createElement('ul');
+  list.id = 'atocal-suggestions';
   list.className = 'atocal-suggestions';
   list.hidden = true;
   list.setAttribute('role', 'listbox');
