@@ -49,6 +49,7 @@
   }
 
   function hide() {
+    requestSeq++;
     list.hidden = true;
     list.replaceChildren();
     suggestions = [];
