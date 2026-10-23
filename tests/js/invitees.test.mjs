@@ -125,4 +125,29 @@ describe('invitee suggestions', () => {
     expect(list.hidden).toBe(true);
     expect(list.children).toHaveLength(0);
   });
+
+  it('searches only the last whitespace-separated fragment', async () => {
+    fetch.mockReturnValue(response([BOB]));
+
+    type('alice@example.com bo');
+    await settle();
+
+    expect(fetch).toHaveBeenCalledWith(
+      SEARCH_URL + '?query=bo',
+      expect.objectContaining({ headers: { Accept: 'application/json' } })
+    );
+  });
+
+  it('keeps whitespace-separated entries when picking a contact', async () => {
+    fetch.mockReturnValue(response([BOB]));
+
+    type('alice@example.com bo');
+    await settle();
+
+    list.querySelector('button').dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+    );
+
+    expect(input.value).toBe('alice@example.com bob@example.com, ');
+  });
 });

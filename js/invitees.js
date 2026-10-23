@@ -13,7 +13,9 @@
   'use strict';
 
   var DEBOUNCE_MS = 250;
-  var SEPARATOR = /[;,]/;
+  /* Must match the server's attendee parsing: whitespace, comma and
+   * semicolon all separate entries. */
+  var SEPARATOR = /[\s;,]+/;
 
   var input = document.getElementById('atocal-attendees');
 
@@ -59,7 +61,7 @@
   }
 
   function commit(email) {
-    var parts = input.value.split(/([;,])/);
+    var parts = input.value.split(/([\s;,]+)/);
     parts.pop();
     var prefix = parts.join('').replace(/\s+$/, '');
 
