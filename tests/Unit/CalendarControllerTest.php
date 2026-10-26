@@ -9,6 +9,7 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\Calendar\ICalendar;
 use OCP\Calendar\ICalendarEventBuilder;
 use OCP\Calendar\ICreateFromString;
@@ -1083,6 +1084,34 @@ class CalendarControllerTest extends TestCase
         $response = $c->searchContacts('person');
 
         $this->assertCount(50, $response->getData());
+    }
+
+    /*
+     * searchContacts(): trivial queries must not reach the
+     * address book
+     */
+
+    public function testSearchContactsSkipsShortQueries(): void
+    {
+        $this->contactsManager->expects($this->never())->method('search');
+
+        $c = $this->newController();
+
+        $this->assertSame([], $c->searchContacts('')->getData());
+        $this->assertSame([], $c->searchContacts('a')->getData());
+        $this->assertSame([], $c->searchContacts(' b ')->getData());
+    }
+
+    public function testSearchContactsIsRateLimited(): void
+    {
+        $method = new \ReflectionMethod(CalendarController::class, 'searchContacts');
+        $attributes = $method->getAttributes(UserRateLimit::class);
+
+        $this->assertCount(1, $attributes);
+
+        $limit = $attributes[0]->newInstance();
+        $this->assertSame(120, $limit->getLimit());
+        $this->assertSame(60, $limit->getPeriod());
     }
 
     public function testSearchContactsTruncatesQuery(): void

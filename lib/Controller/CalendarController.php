@@ -10,6 +10,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -75,6 +76,19 @@ class CalendarController extends Controller
      * keeps the confirm page small on large address books.
      */
     private const MAX_CONTACT_SUGGESTIONS = 50;
+
+    /*
+     * Short fragments are not distinctive enough for an
+     * address-book search, so they skip it entirely.
+     */
+    private const MIN_SEARCH_QUERY = 2;
+
+    /*
+     * Live-search requests per minute per user. The JS debounce
+     * produces at most four per second while typing.
+     */
+    private const SEARCH_RATE_LIMIT = 120;
+    private const SEARCH_RATE_PERIOD = 60;
 
     private IManager $calendarManager;
     private IContactsManager $contactsManager;
@@ -310,8 +324,21 @@ class CalendarController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
+    #[UserRateLimit(
+        limit: self::SEARCH_RATE_LIMIT,
+        period: self::SEARCH_RATE_PERIOD
+    )]
     public function searchContacts(string $query = ''): DataResponse
     {
+        /*
+         * An empty or single-character query means a scan of the
+         * whole address book: the most expensive case, skipped
+         * because such fragments match too much anyway.
+         */
+        if (mb_strlen(trim($query)) < self::MIN_SEARCH_QUERY) {
+            return new DataResponse([]);
+        }
+
         return new DataResponse($this->contactSuggestions($query));
     }
 
