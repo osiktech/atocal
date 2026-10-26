@@ -844,27 +844,36 @@ class CalendarController extends Controller
     {
         $timeZone = $this->dateTimeZone->getTimeZone();
 
-        $date = \DateTimeImmutable::createFromFormat(
-            self::DATETIME_LOCAL,
-            $value,
-            $timeZone
-        );
-
-        if ($date === false) {
+        /*
+         * "!" resets all fields, so no parts of the current date
+         * leak in. PHP normalizes impossible dates instead of
+         * failing (2026-02-31 rolls into March), so require zero
+         * warnings and an exact format round-trip on top of the
+         * parse result.
+         */
+        foreach (['!' . self::DATETIME_LOCAL, '!Y-m-d\TH:i:s'] as $format) {
             $date = \DateTimeImmutable::createFromFormat(
-                'Y-m-d\TH:i:s',
+                $format,
                 $value,
                 $timeZone
             );
+
+            $errors = \DateTimeImmutable::getLastErrors();
+
+            if (
+                $date !== false
+                && ($errors === false
+                    || ($errors['warning_count'] === 0
+                        && $errors['error_count'] === 0))
+                && $date->format(substr($format, 1)) === $value
+            ) {
+                return $date;
+            }
         }
 
-        if ($date === false) {
-            throw new \InvalidArgumentException(
-                $this->l10n->t('Invalid date/time.')
-            );
-        }
-
-        return $date;
+        throw new \InvalidArgumentException(
+            $this->l10n->t('Invalid date/time.')
+        );
     }
 
     /**

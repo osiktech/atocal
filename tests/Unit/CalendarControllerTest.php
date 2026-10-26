@@ -218,6 +218,35 @@ class CalendarControllerTest extends TestCase
         $this->invoke($c, 'parseLocalDateTime', ['tomorrow']);
     }
 
+    public function testParseLocalDateTimeAcceptsLeapDay(): void
+    {
+        $c = $this->newController();
+
+        $date = $this->invoke($c, 'parseLocalDateTime', ['2028-02-29T10:00']);
+        $this->assertSame('2028-02-29 10:00:00 UTC', $date->format('Y-m-d H:i:s T'));
+    }
+
+    public static function provideInvalidLocalDateTimes(): iterable
+    {
+        return [
+            'impossible day rolls into next month' => ['2026-02-31T10:00'],
+            'leap day in a non-leap year' => ['2027-02-29T10:00'],
+            'month out of range' => ['2026-13-01T10:00'],
+            'day out of range' => ['2026-00-15T10:00'],
+            'hour out of range' => ['2026-02-03T25:00'],
+            'non-padded components' => ['2026-2-3T10:00'],
+        ];
+    }
+
+    #[DataProvider('provideInvalidLocalDateTimes')]
+    public function testParseLocalDateTimeRejectsInvalidValues(string $value): void
+    {
+        $c = $this->newController();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->invoke($c, 'parseLocalDateTime', [$value]);
+    }
+
     /*
      * validateEventData
      */
