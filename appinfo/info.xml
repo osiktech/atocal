@@ -8,11 +8,15 @@
   </description>
   <version>1.0.0</version>
   <licence>AGPL</licence>
-  <author>Stefan Tollkühn s.tollkuehn@bnvb-ingenieure.de</author>
+  <author mail="atocal@bnvb-ingenieure.de">Stefan Tollkühn</author>
   <namespace>AToCal</namespace>
   <category>integration</category>
+  <category>tools</category>
   <dependencies>
     <nextcloud min-version="34" max-version="35"/>
   </dependencies>
-  <screenshot></screenshot>
+  <website>https://github.com/osiktech/atocal</website>
+  <bugs>https://github.com/osiktech/atocal/issues</bugs>
+  <repository type="git">https://github.com/osiktech/atocal</repository>
+  <screenshot>https://private-user-images.githubusercontent.com/21309019/685938995-dbd7ec4c-6adc-4059-bcd6-59cce9d6fcb5.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3OTMwOTQyMDgsIm5iZiI6MTc5MzA5MzkwOCwicGF0aCI6Ii8yMTMwOTAxOS82ODU5Mzg5OTUtZGJkN2VjNGMtNmFkYy00MDU5LWJjZDYtNTljY2U5ZDZmY2I1LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjEwMjclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYxMDI3VDA5MzgyOFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWFlZDE3MDk4OTNhYmU0ZjIzNDBjZjMwNTc5ZjFmZDIyMTFjNjU4MzBmMzkxODllOTA0NTUxYTMyMGIwMTA3MDAmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.ChinpCO2myfCeA1hW7Eydtlu13WcdIu98nNom9QvDNg</screenshot>
 </info>
